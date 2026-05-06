@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-title" content="MurmurTether"/>
+<meta name="theme-color" content="#0a0a0a"/>
+<title>MurmurTether</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Lora:ital@0;1&family=DM+Mono&family=Caveat:wght@400;600&family=Cormorant+Garamond:ital,wght@0,300;1,300&family=Space+Grotesk:wght@300;400&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body,#root{height:100%;width:100%;}
+body{font-family:'Space Grotesk',system-ui,sans-serif;overflow:hidden;}
+::-webkit-scrollbar{width:3px;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:2px;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+@keyframes flicker{0%,100%{opacity:.55;transform:scale(1);}50%{opacity:1;transform:scale(1.2);}}
+.note-in{animation:fadeUp .35s ease forwards;}
+.candle{display:inline-block;animation:flicker 2.2s ease-in-out infinite;}
+input[type=range]{-webkit-appearance:none;appearance:none;height:3px;border-radius:2px;outline:none;cursor:pointer;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;cursor:pointer;}
+input[type=color]{-webkit-appearance:none;appearance:none;border:none;padding:0;cursor:pointer;border-radius:50%;overflow:hidden;}
+input[type=color]::-webkit-color-swatch-wrapper{padding:0;}
+input[type=color]::-webkit-color-swatch{border:none;border-radius:50%;}
+.draw-canvas{touch-action:none;display:block;}
+.app{display:flex;flex-direction:column;height:100vh;position:relative;overflow:hidden;transition:background .6s ease;}
+.header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid;flex-shrink:0;position:relative;z-index:10;}
+.header-title{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:300;font-size:1.25rem;}
+.header-controls{display:flex;align-items:center;gap:8px;}
+.btn-group{display:flex;border-radius:12px;overflow:hidden;border:1px solid;}
+.btn-group button{padding:6px 10px;font-size:12px;cursor:pointer;border:none;font-family:inherit;transition:background .2s,color .2s;}
+.mural{flex:1;overflow-y:auto;padding:24px 20px;display:flex;flex-direction:column;gap:16px;position:relative;z-index:10;}
+.empty-state{flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;padding:60px 0;}
+.empty-state .moon{font-size:2rem;opacity:.25;}
+.empty-state p{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:.95rem;}
+.note{border-radius:18px;overflow:hidden;max-width:320px;width:fit-content;min-width:160px;position:relative;}
+.note.mine{align-self:flex-end;}
+.note.theirs{align-self:flex-start;}
+.note-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px 4px;}
+.note-author{font-size:11px;opacity:.45;}
+.note-meta{display:flex;align-items:center;gap:6px;font-size:11px;opacity:.3;}
+.note-body{padding:4px 14px 14px;}
+.note-body p{line-height:1.6;white-space:pre-wrap;}
+.note-body img{width:100%;border-radius:10px;display:block;}
+.compose{border-top:1px solid;flex-shrink:0;position:relative;z-index:10;}
+.compose-extras{padding:10px 16px 0;}
+.font-pills{display:flex;gap:6px;flex-wrap:wrap;}
+.font-pill{padding:4px 12px;border-radius:20px;font-size:12px;cursor:pointer;border:1px solid;background:transparent;transition:background .2s,color .2s;}
+.color-dots{display:flex;gap:8px;padding:2px 0;}
+.color-dot{width:22px;height:22px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:border-color .2s;}
+.compose-row{display:flex;align-items:flex-end;gap:8px;padding:10px 16px 14px;}
+.compose-tools{display:flex;flex-direction:column;gap:6px;}
+.tool-btn{width:34px;height:34px;border-radius:10px;border:1px solid;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;background:transparent;transition:background .2s;}
+.compose-textarea{flex:1;resize:none;border-radius:16px;padding:10px 14px;font-size:14px;outline:none;line-height:1.5;border:1px solid;}
+.send-btn{width:34px;height:34px;border-radius:10px;border:none;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:opacity .2s;}
+.send-btn:disabled{opacity:.3;cursor:default;}
+.onboard{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
+.onboard-card{width:100%;max-width:340px;display:flex;flex-direction:column;gap:20px;}
+.onboard-title{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:300;font-size:2rem;}
+.onboard-sub{font-size:13px;margin-top:4px;}
+.onboard-btn{padding:14px;border-radius:16px;font-size:14px;cursor:pointer;border:1px solid;font-family:inherit;font-weight:500;transition:opacity .2s;}
+.onboard-btn:hover{opacity:.85;}
+.onboard-input{width:100%;padding:12px 16px;border-radius:14px;font-size:14px;outline:none;border:1px solid;font-family:inherit;}
+.onboard-label{font-size:11px;letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px;display:block;}
+.onboard-back{font-size:12px;text-align:center;background:none;border:none;cursor:pointer;font-family:inherit;}
+.err{font-size:12px;color:#e08080;}
+.modal-overlay{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.75);}
+.modal{width:100%;max-width:420px;border-radius:20px;overflow:hidden;padding:24px;display:flex;flex-direction:column;gap:16px;border:1px solid;}
+.modal h2{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:300;font-size:1.4rem;}
+.invite-url{padding:10px 14px;border-radius:12px;font-size:12px;word-break:break-all;user-select:all;border:1px solid;line-height:1.6;}
+.modal-sub{font-size:12px;text-align:center;}
+.draw-modal{width:100%;max-width:500px;border-radius:20px;overflow:hidden;padding:18px;display:flex;flex-direction:column;gap:12px;border:1px solid;}
+.draw-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.draw-tools{display:flex;gap:4px;}
+.draw-tool{width:32px;height:32px;border-radius:9px;border:1px solid;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;background:transparent;}
+.draw-actions{display:flex;justify-content:flex-end;gap:8px;}
+.draw-cancel{padding:8px 16px;border-radius:12px;font-size:13px;cursor:pointer;background:transparent;font-family:inherit;}
+.draw-save{padding:8px 16px;border-radius:12px;font-size:13px;cursor:pointer;font-family:inherit;font-weight:500;border:none;}
+.bg-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
+const {useState,useEffect,useRef,useCallback}=React;
+
+const SB_URL='https://fffmyllvcetchfrarjrt.supabase.co';
+const SB_KEY='sb_publishable_u89DH5nIDHMWayk8jiIC-w_xTJ-0gWP';
+const sb=supabase.createClient(SB_URL,SB_KEY);
+
+const ls={
+  get:(k)=>{try{const v=localStorage.getItem('mt_'+k);return v?JSON.parse(v):null;}catch{return null;}},
+  set:(k,v)=>{try{localStorage.setItem('mt_'+k,JSON.stringify(v));}catch{}}
+};
+
+const getIsDark=()=>{const h=new Date().getHours();return h<7||h>=18;};
+
+const T={
+  night:{bg:'#0a0a0a',surface:'#141414',border:'rgba(255,255,255,0.08)',text:'#e4e4e4',muted:'rgba(255,255,255,0.3)',accent:'#e4e4e4',accentFg:'#0a0a0a',inputBg:'#0d0d0d',hover:'#1c1c1c'},
+  day:  {bg:'#f8f6f1',surface:'#ffffff',border:'rgba(0,0,0,0.09)',text:'#1a1a1a',muted:'rgba(0,0,0,0.35)',accent:'#1a1a1a',accentFg:'#ffffff',inputBg:'#fafaf7',hover:'#f0eeea'},
+};
+
+const FONTS=[
+  {id:'space',   label:'Space Grotesk', css:"'Space Grotesk',sans-serif"},
+  {id:'playfair',label:'Playfair',      css:"'Playfair Display',serif"},
+  {id:'lora',    label:'Lora',          css:"'Lora',serif"},
+  {id:'cormorant',label:'Cormorant',    css:"'Cormorant Garamond',serif"},
+  {id:'caveat',  label:'Caveat',        css:"'Caveat',cursive"},
+  {id:'mono',    label:'Mono',          css:"'DM Mono',monospace"},
+];
+
+const NCOLORS=[
+  {id:'paper',   day:'#fefcf7',night:'#181612'},
+  {id:'rose',    day:'#fdf0ee',night:'#1e1312'},
+  {id:'sage',    day:'#eff5f1',night:'#121a13'},
+  {id:'slate',   day:'#eef2f8',night:'#12141a'},
+  {id:'sand',    day:'#f7f2e7',night:'#1a1710'},
+  {id:'lavender',day:'#f3f0f9',night:'#151218'},
+];
+
+const applyY2K=(canvas,src)=>new Promise(res=>{
+  const img=new Image();
+  img.onload=()=>{
+    const W=310,H=Math.round(310*(img.height/img.width));
+    canvas.width=W;canvas.height=H;
+    const ctx=canvas.getContext('2d');
+    ctx.drawImage(img,0,0,W,H);
+    const id=ctx.getImageData(0,0,W,H);const d=id.data;
+    for(let i=0;i<d.length;i+=4){
+      d[i]=Math.min(255,d[i]*.88+18);
+      d[i+1]=Math.min(255,d[i+1]*.95+14);
+      d[i+2]=Math.min(255,d[i+2]*1.07+10);
+      const n=(Math.random()-.5)*30;
+      d[i]+=n;d[i+1]+=n;d[i+2]+=n;
+    }
+    ctx.putImageData(id,0,0);
+    const vg=ctx.createRadialGradient(W/2,H/2,H*.2,W/2,H/2,H*.75);
+    vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.4)');
+    ctx.fillStyle=vg;ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='rgba(0,0,0,.04)';
+    for(let y=0;y<H;y+=2)ctx.fillRect(0,y,W,1);
+    ctx.fillStyle='rgba(255,200,50,.75)';ctx.font='bold 10px monospace';
+    const now=new Date();
+    ctx.fillText(`${String(now.getMonth()+1).padStart(2,'0')}/${now.getDate()}/${now.getFullYear()}`,W-78,H-8);
+    res(canvas.toDataURL('image/jpeg',.7));
+  };
+  img.src=src;
+});
+
+function DrawCanvas({onSave,onCancel,isDark}){
+  const ref=useRef(null);
+  const [tool,setTool]=useState('pen');
+  const [color,setColor]=useState(isDark?'#e4e4e4':'#1a1a1a');
+  const [sz,setSz]=useState(3);
+  const drawing=useRef(false);
+  const last=useRef(null);
+  const t=T[isDark?'night':'day'];
+
+  useEffect(()=>{
+    const c=ref.current,ctx=c.getContext('2d');
+    ctx.fillStyle=isDark?'#0a0a0a':'#fefcf7';
+    ctx.fillRect(0,0,c.width,c.height);
+  },[]);
+
+  const pos=(e,c)=>{
+    const r=c.getBoundingClientRect();
+    const s=e.touches?e.touches[0]:e;
+    return{x:(s.clientX-r.left)*(c.width/r.width),y:(s.clientY-r.top)*(c.height/r.height)};
+  };
+
+  const spray=(ctx,p)=>{
+    ctx.fillStyle=color;
+    for(let i=0;i<18;i++){
+      const r=sz*4,x=p.x+(Math.random()-.5)*r*2,y=p.y+(Math.random()-.5)*r*2;
+      if(Math.hypot(x-p.x,y-p.y)<r)ctx.fillRect(x,y,1.5,1.5);
+    }
+  };
+
+  const onDown=e=>{
+    e.preventDefault();drawing.current=true;
+    const c=ref.current,p=pos(e,c);last.current=p;
+    if(tool==='spray')spray(c.getContext('2d'),p);
+  };
+
+  const onMove=e=>{
+    if(!drawing.current)return;e.preventDefault();
+    const c=ref.current,ctx=c.getContext('2d'),p=pos(e,c);
+    if(tool==='pen'||tool==='eraser'){
+      ctx.beginPath();ctx.moveTo(last.current.x,last.current.y);ctx.lineTo(p.x,p.y);
+      ctx.strokeStyle=tool==='eraser'?(isDark?'#0a0a0a':'#fefcf7'):color;
+      ctx.lineWidth=tool==='eraser'?sz*4:sz;ctx.lineCap='round';ctx.lineJoin='round';ctx.stroke();
+      last.current=p;
+    }else if(tool==='spray'){spray(ctx,p);last.current=p;}
+  };
+
+  const onUp=e=>{
+    if(!drawing.current)return;e.preventDefault();
+    const c=ref.current,ctx=c.getContext('2d'),p=pos(e,c),l=last.current;
+    if(tool==='rect'){ctx.strokeStyle=color;ctx.lineWidth=sz;ctx.strokeRect(l.x,l.y,p.x-l.x,p.y-l.y);}
+    else if(tool==='line'){ctx.beginPath();ctx.moveTo(l.x,l.y);ctx.lineTo(p.x,p.y);ctx.strokeStyle=color;ctx.lineWidth=sz;ctx.lineCap='round';ctx.stroke();}
+    else if(tool==='circle'){
+      const rx=Math.abs(p.x-l.x)/2,ry=Math.abs(p.y-l.y)/2;
+      ctx.strokeStyle=color;ctx.lineWidth=sz;ctx.beginPath();
+      ctx.ellipse(l.x+(p.x>l.x?rx:-rx),l.y+(p.y>l.y?ry:-ry),rx,ry,0,0,Math.PI*2);ctx.stroke();
+    }
+    drawing.current=false;
+  };
+
+  const save=async()=>{
+    const tmp=document.createElement('canvas');
+    onSave(await applyY2K(tmp,ref.current.toDataURL()));
+  };
+
+  const TOOLS=[{id:'pen',icon:'✏️'},{id:'eraser',icon:'◻'},{id:'spray',icon:'·:·'},{id:'line',icon:'╱'},{id:'rect',icon:'▭'},{id:'circle',icon:'○'}];
+
+  return(
+    <div className="modal-overlay">
+      <div className="draw-modal" style={{background:t.surface,borderColor:t.border}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+          <span style={{fontSize:13,color:t.text,fontWeight:500}}>Dibujar</span>
+          <button onClick={onCancel} style={{background:'none',border:'none',cursor:'pointer',fontSize:18,color:t.muted}}>✕</button>
+        </div>
+        <div className="draw-toolbar">
+          <div className="draw-tools">
+            {TOOLS.map(({id,icon})=>(
+              <button key={id} className="draw-tool" onClick={()=>setTool(id)}
+                style={{background:tool===id?t.accent:'transparent',color:tool===id?t.accentFg:t.text,borderColor:t.border}}>
+                {icon}
+              </button>
+            ))}
+          </div>
+          <input type="color" value={color} onChange={e=>setColor(e.target.value)} style={{width:30,height:30,borderRadius:'50%'}}/>
+          <div style={{display:'flex',alignItems:'center',gap:8,flex:1}}>
+            <span style={{fontSize:11,color:t.muted,whiteSpace:'nowrap'}}>grosor</span>
+            <input type="range" min="1" max="18" value={sz} onChange={e=>setSz(+e.target.value)} style={{flex:1,accentColor:t.accent,background:t.border}}/>
+          </div>
+        </div>
+        <canvas ref={ref} width={460} height={300} className="draw-canvas"
+          style={{width:'100%',borderRadius:12,border:`1px solid ${t.border}`,cursor:tool==='eraser'?'cell':'crosshair'}}
+          onMouseDown={onDown} onMouseMove={onMove} onMouseUp={onUp} onMouseLeave={onUp}
+          onTouchStart={onDown} onTouchMove={onMove} onTouchEnd={onUp}/>
+        <div className="draw-actions">
+          <button className="draw-cancel" onClick={onCancel} style={{borderColor:t.border,color:t.muted,border:`1px solid ${t.border}`}}>Cancelar</button>
+          <button className="draw-save" onClick={save} style={{background:t.accent,color:t.accentFg}}>Guardar con filtro ✦</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function NoteCard({note,myId,isDark}){
+  const isMe=note.author_id===myId;
+  const nc=NCOLORS.find(c=>c.id===note.color)||NCOLORS[0];
+  const bg=isDark?nc.night:nc.day;
+  const font=FONTS.find(f=>f.id===note.font)||FONTS[0];
+  const otherRead=isMe&&(note.read_by||[]).some(id=>id!==note.author_id);
+  const textColor=isDark?'rgba(255,255,255,0.8)':'rgba(0,0,0,0.75)';
+
+  return(
+    <div className={`note note-in ${isMe?'mine':'theirs'}`}
+      style={{background:bg,border:`1px solid ${isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.07)'}`,
+        boxShadow:isDark?'0 2px 20px rgba(0,0,0,0.5)':'0 2px 16px rgba(0,0,0,0.07)'}}>
+      <div className="note-header">
+        <span className="note-author" style={{color:textColor,fontFamily:font.css}}>{note.author_name||'anon'}</span>
+        <div className="note-meta" style={{color:textColor}}>
+          {isMe&&otherRead&&<span className="candle">🕯️</span>}
+          <span>{new Date(note.created_at).toLocaleDateString('es',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</span>
+        </div>
+      </div>
+      <div className="note-body">
+        {note.type==='text'&&(
+          <p style={{fontFamily:font.css,color:textColor,
+            fontSize:note.font==='caveat'?'1.15rem':note.font==='cormorant'?'1.05rem':'0.875rem',
+            fontStyle:['cormorant','lora'].includes(note.font)?'italic':'normal'}}>
+            {note.content}
+          </p>
+        )}
+        {(note.type==='drawing'||note.type==='photo')&&<img src={note.content} alt=""/>}
+      </div>
+    </div>
+  );
+}
+
+function Compose({onSend,isDark}){
+  const [text,setText]=useState('');
+  const [font,setFont]=useState('space');
+  const [color,setColor]=useState('paper');
+  const [showFonts,setShowFonts]=useState(false);
+  const [showColors,setShowColors]=useState(false);
+  const [showDraw,setShowDraw]=useState(false);
+  const fileRef=useRef(null);
+  const filterCanvas=useRef(document.createElement('canvas'));
+  const t=T[isDark?'night':'day'];
+  const selFont=FONTS.find(f=>f.id===font)||FONTS[0];
+
+  const send=()=>{
+    if(!text.trim())return;
+    onSend({type:'text',content:text.trim(),font,color});
+    setText('');
+  };
+
+  const handlePhoto=async e=>{
+    const file=e.target.files[0];if(!file)return;
+    const r=new FileReader();
+    r.onload=async ev=>{onSend({type:'photo',content:await applyY2K(filterCanvas.current,ev.target.result),font,color});};
+    r.readAsDataURL(file);e.target.value='';
+  };
+
+  return(
+    <>
+    {showDraw&&<DrawCanvas isDark={isDark} onCancel={()=>setShowDraw(false)}
+      onSave={d=>{onSend({type:'drawing',content:d,font,color});setShowDraw(false);}}/>}
+    <div className="compose" style={{borderColor:t.border,background:t.surface}}>
+      {showFonts&&(
+        <div className="compose-extras">
+          <div className="font-pills">
+            {FONTS.map(f=>(
+              <button key={f.id} className="font-pill" onClick={()=>{setFont(f.id);setShowFonts(false);}}
+                style={{fontFamily:f.css,background:font===f.id?t.accent:'transparent',
+                  color:font===f.id?t.accentFg:t.text,borderColor:t.border}}>
+                {f.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      {showColors&&(
+        <div className="compose-extras">
+          <div className="color-dots">
+            {NCOLORS.map(c=>(
+              <button key={c.id} className="color-dot" onClick={()=>{setColor(c.id);setShowColors(false);}}
+                style={{background:isDark?c.night:c.day,
+                  borderColor:color===c.id?t.accent:'transparent',
+                  boxShadow:color===c.id?`0 0 0 1px ${t.accent}`:'none'}}/>
+            ))}
+          </div>
+        </div>
+      )}
+      <div className="compose-row">
+        <div className="compose-tools">
+          <button className="tool-btn" onClick={()=>{setShowFonts(!showFonts);setShowColors(false);}}
+            style={{background:showFonts?t.accent:'transparent',color:showFonts?t.accentFg:t.muted,
+              borderColor:t.border,fontFamily:selFont.css,fontSize:12}}>Aa</button>
+          <button className="tool-btn" onClick={()=>{setShowColors(!showColors);setShowFonts(false);}}
+            style={{background:isDark?NCOLORS.find(c=>c.id===color)?.night:NCOLORS.find(c=>c.id===color)?.day,
+              borderColor:showColors?t.accent:t.border}}/>
+        </div>
+        <textarea className="compose-textarea" rows={2} value={text} onChange={e=>setText(e.target.value)}
+          onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}}}
+          placeholder="murmura algo..."
+          style={{fontFamily:selFont.css,background:t.inputBg,color:t.text,borderColor:t.border}}/>
+        <div style={{display:'flex',flexDirection:'column',gap:6}}>
+          <button className="tool-btn" onClick={()=>setShowDraw(true)} style={{color:t.muted,borderColor:t.border}}>✏️</button>
+          <button className="tool-btn" onClick={()=>fileRef.current?.click()} style={{color:t.muted,borderColor:t.border}}>📷</button>
+          <button className="send-btn" onClick={send} disabled={!text.trim()} style={{background:t.accent,color:t.accentFg}}>↑</button>
+        </div>
+      </div>
+      <input ref={fileRef} type="file" accept="image/*" style={{display:'none'}} onChange={handlePhoto}/>
+    </div>
+    </>
+  );
+}
+
+function Onboarding({onDone,isDark}){
+  const t=T[isDark?'night':'day'];
+  const [step,setStep]=useState('choice');
+  const [name,setName]=useState('');
+  const [code,setCode]=useState('');
+  const [loading,setLoading]=useState(false);
+  const [err,setErr]=useState('');
+
+  // Check URL for room param on mount
+  useEffect(()=>{
+    const params=new URLSearchParams(window.location.search);
+    const room=params.get('room');
+    if(room){setCode(room);setStep('join');}
+  },[]);
+
+  const create=async()=>{
+    if(!name.trim())return setErr('Ponete un apodo primero');
+    setLoading(true);setErr('');
+    const roomId='mt_'+Math.random().toString(36).slice(2,9);
+    const userId='u_'+Math.random().toString(36).slice(2)+Date.now().toString(36);
+    const{error}=await sb.from('murmur_rooms').insert({id:roomId,created_by:userId,members:[{id:userId,name:name.trim()}]});
+    if(error){setErr('Error al crear sala. Intenta de nuevo.');setLoading(false);return;}
+    ls.set('userId',userId);ls.set('userName',name.trim());ls.set('roomId',roomId);
+    onDone({userId,userName:name.trim(),roomId});
+  };
+
+  const join=async()=>{
+    if(!name.trim())return setErr('Ponete un apodo primero');
+    if(!code.trim())return setErr('Pegá el link o código');
+    setLoading(true);setErr('');
+    const roomId=code.trim().includes('room=')?new URLSearchParams(code.trim().split('?')[1]).get('room'):code.trim();
+    const{data,error}=await sb.from('murmur_rooms').select('*').eq('id',roomId).single();
+    if(error||!data){setErr('Sala no encontrada. Revisá el link.');setLoading(false);return;}
+    const userId='u_'+Math.random().toString(36).slice(2)+Date.now().toString(36);
+    await sb.from('murmur_rooms').update({members:[...(data.members||[]),{id:userId,name:name.trim()}]}).eq('id',roomId);
+    ls.set('userId',userId);ls.set('userName',name.trim());ls.set('roomId',roomId);
+    onDone({userId,userName:name.trim(),roomId});
+  };
+
+  return(
+    <div className="onboard" style={{background:t.bg}}>
+      <div className="onboard-card">
+        <div style={{textAlign:'center'}}>
+          <div style={{fontSize:'2rem',marginBottom:12}}>🌙</div>
+          <div className="onboard-title" style={{color:t.text}}>MurmurTether</div>
+          <div className="onboard-sub" style={{color:t.muted}}>notas íntimas, sin ruido</div>
+        </div>
+        {step==='choice'&&(
+          <div style={{display:'flex',flexDirection:'column',gap:10}}>
+            <button className="onboard-btn" onClick={()=>setStep('create')} style={{background:t.accent,color:t.accentFg,borderColor:t.accent}}>Crear una sala nueva</button>
+            <button className="onboard-btn" onClick={()=>setStep('join')} style={{background:'transparent',color:t.text,borderColor:t.border}}>Unirme con un link</button>
+          </div>
+        )}
+        {(step==='create'||step==='join')&&(
+          <div style={{display:'flex',flexDirection:'column',gap:14}}>
+            <div>
+              <label className="onboard-label" style={{color:t.muted}}>Tu apodo</label>
+              <input className="onboard-input" value={name} onChange={e=>setName(e.target.value)}
+                placeholder="¿cómo te llaman acá?" autoFocus
+                style={{background:t.inputBg,color:t.text,borderColor:t.border}}/>
+            </div>
+            {step==='join'&&(
+              <div>
+                <label className="onboard-label" style={{color:t.muted}}>Link de invitación</label>
+                <input className="onboard-input" value={code} onChange={e=>setCode(e.target.value)}
+                  placeholder="pegá el link aquí"
+                  style={{background:t.inputBg,color:t.text,borderColor:t.border}}/>
+              </div>
+            )}
+            {err&&<p className="err">{err}</p>}
+            <button className="onboard-btn" onClick={step==='create'?create:join} disabled={loading}
+              style={{background:t.accent,color:t.accentFg,borderColor:t.accent,opacity:loading?.6:1}}>
+              {loading?'un momento...':(step==='create'?'Crear sala':'Entrar')}
+            </button>
+            <button className="onboard-back" onClick={()=>{setStep('choice');setErr('');}} style={{color:t.muted}}>← volver</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function OutdoorBg({isDark}){
+  return(
+    <svg className="bg-svg" preserveAspectRatio="xMidYMid slice" viewBox="0 0 1200 800" style={{opacity:.45}}>
+      <defs>
+        <linearGradient id="osky" x1="0" y1="0" x2="0" y2="1">
+          {isDark?<><stop offset="0%" stopColor="#090e18"/><stop offset="100%" stopColor="#18283c"/></>
+                 :<><stop offset="0%" stopColor="#a5d2e8"/><stop offset="100%" stopColor="#e6f1f7"/></>}
+        </linearGradient>
+        <linearGradient id="om1" x1="0" y1="0" x2="0" y2="1">
+          {isDark?<><stop offset="0%" stopColor="#182333"/><stop offset="100%" stopColor="#0c141f"/></>
+                 :<><stop offset="0%" stopColor="#3b6848"/><stop offset="100%" stopColor="#294d33"/></>}
+        </linearGradient>
+      </defs>
+      <rect width="1200" height="800" fill="url(#osky)"/>
+      {isDark&&Array.from({length:45}).map((_,i)=>(
+        <circle key={i} cx={(i*139)%1200} cy={(i*71)%380} r={Math.random()*1.1+.3} fill="white" opacity={Math.random()*.6+.2}/>
+      ))}
+      <polygon points="0,800 0,500 180,355 390,445 595,305 800,405 995,325 1200,425 1200,800" fill={isDark?'#0e1a2a':'#4a7a58'} opacity=".7"/>
+      <polygon points="0,800 0,610 140,490 340,555 545,425 745,520 945,445 1200,545 1200,800" fill="url(#om1)"/>
+      <polygon points="595,305 575,342 615,342" fill={isDark?"#4e6070":"#fff"} opacity=".85"/>
+      <polygon points="180,355 166,388 194,388" fill={isDark?"#4e6070":"#fff"} opacity=".85"/>
+      {Array.from({length:22}).map((_,i)=>{const x=(i*57)%1200,y=600+(i%4)*22;return(
+        <polygon key={i} points={`${x},${y} ${x-7},${y+22} ${x+7},${y+22}`} fill={isDark?'#080e14':'#1d4828'}/>
+      );})}
+      {isDark&&Array.from({length:18}).map((_,i)=>(
+        <circle key={i} cx={(i*91)%1200} cy={(i*43)%800} r="1.5" fill="white" opacity=".6">
+          <animate attributeName="cy" from="-10" to="810" dur={`${7+(i%5)}s`} repeatCount="indefinite" begin={`${i*.35}s`}/>
+        </circle>
+      ))}
+    </svg>
+  );
+}
+
+function App(){
+  const [session,setSession]=useState(null);
+  const [notes,setNotes]=useState([]);
+  const [ready,setReady]=useState(false);
+  const [bgTheme,setBgTheme]=useState('plain');
+  const [manual,setManual]=useState(null);
+  const [autoDark,setAutoDark]=useState(getIsDark());
+  const [showInvite,setShowInvite]=useState(false);
+  const [inviteUrl,setInviteUrl]=useState('');
+  const bottomRef=useRef(null);
+
+  const isDark=manual?manual==='night':autoDark;
+  const t=T[isDark?'night':'day'];
+
+  useEffect(()=>{
+    const i=setInterval(()=>setAutoDark(getIsDark()),60000);
+    return()=>clearInterval(i);
+  },[]);
+
+  useEffect(()=>{
+    const s={userId:ls.get('userId'),userName:ls.get('userName'),roomId:ls.get('roomId')};
+    const bt=ls.get('bgTheme');if(bt)setBgTheme(bt);
+    if(s.userId&&s.roomId)setSession(s);
+    else setReady(true);
+  },[]);
+
+  useEffect(()=>{
+    if(!session)return;
+    sb.from('murmur_notes').select('*').eq('room_id',session.roomId).order('created_at',{ascending:true})
+      .then(({data})=>{if(data)setNotes(data);setReady(true);});
+    const ch=sb.channel('room_'+session.roomId)
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'murmur_notes',filter:`room_id=eq.${session.roomId}`},
+        p=>setNotes(prev=>[...prev,p.new]))
+      .on('postgres_changes',{event:'UPDATE',schema:'public',table:'murmur_notes',filter:`room_id=eq.${session.roomId}`},
+        p=>setNotes(prev=>prev.map(n=>n.id===p.new.id?p.new:n)))
+      .subscribe();
+    return()=>sb.removeChannel(ch);
+  },[session]);
+
+  useEffect(()=>{bottomRef.current?.scrollIntoView({behavior:'smooth'});},[notes]);
+
+  const sendNote=async({type,content,font,color})=>{
+    if(!session)return;
+    await sb.from('murmur_notes').insert({
+      room_id:session.roomId,author_id:session.userId,author_name:session.userName,
+      type,content,font,color,read_by:[session.userId],created_at:new Date().toISOString(),
+    });
+  };
+
+  const getInvite=async()=>{
+    const url=`${window.location.origin}${window.location.pathname}?room=${session.roomId}`;
+    setInviteUrl(url);setShowInvite(true);
+    try{await navigator.clipboard.writeText(url);}catch{}
+  };
+
+  if(!ready)return(
+    <div style={{height:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:T[isDark?'night':'day'].bg}}>
+      <span style={{color:T[isDark?'night':'day'].muted,fontSize:13}}>conectando...</span>
+    </div>
+  );
+
+  if(!session)return <Onboarding isDark={isDark} onDone={s=>setSession(s)}/>;
+
+  return(
+    <div className="app" style={{background:t.bg}}>
+      {bgTheme==='outdoor'&&<OutdoorBg isDark={isDark}/>}
+
+      {showInvite&&(
+        <div className="modal-overlay">
+          <div className="modal" style={{background:t.surface,borderColor:t.border}}>
+            <h2 style={{color:t.text}}>Compartí la sala</h2>
+            <p style={{fontSize:13,color:t.muted}}>Enviá este link. Solo hace falta abrirlo y elegir un apodo.</p>
+            <div className="invite-url" style={{background:t.inputBg,color:t.text,borderColor:t.border}}>{inviteUrl}</div>
+            <p className="modal-sub" style={{color:t.muted}}>copiado al portapapeles ✓</p>
+            <button className="onboard-btn" onClick={()=>setShowInvite(false)} style={{background:t.accent,color:t.accentFg,borderColor:t.accent}}>listo</button>
+          </div>
+        </div>
+      )}
+
+      <header className="header" style={{borderColor:t.border,background:t.surface+'ee'}}>
+        <span className="header-title" style={{color:t.text}}>MurmurTether</span>
+        <div className="header-controls">
+          <div className="btn-group" style={{borderColor:t.border}}>
+            {[{id:'plain',icon:'✦'},{id:'outdoor',icon:'⛰'}].map(b=>(
+              <button key={b.id} onClick={()=>{setBgTheme(b.id);ls.set('bgTheme',b.id);}}
+                style={{background:bgTheme===b.id?t.accent:'transparent',color:bgTheme===b.id?t.accentFg:t.muted}}>
+                {b.icon}
+              </button>
+            ))}
+          </div>
+          <div className="btn-group" style={{borderColor:t.border}}>
+            <button onClick={()=>setManual(manual==='day'?null:'day')} style={{background:manual==='day'?t.accent:'transparent',color:manual==='day'?t.accentFg:t.muted}}>☀</button>
+            <button onClick={()=>setManual(manual==='night'?null:'night')} style={{background:manual==='night'?t.accent:'transparent',color:manual==='night'?t.accentFg:t.muted}}>☽</button>
+          </div>
+          <button onClick={getInvite} style={{padding:'6px 12px',borderRadius:10,fontSize:12,cursor:'pointer',
+            background:'transparent',color:t.muted,border:`1px solid ${t.border}`,fontFamily:'inherit'}}>
+            + invitar
+          </button>
+        </div>
+      </header>
+
+      <div className="mural">
+        {notes.length===0&&(
+          <div className="empty-state">
+            <div className="moon">🌙</div>
+            <p style={{color:t.muted}}>el silencio antes del primer murmullo</p>
+          </div>
+        )}
+        {notes.map(n=><NoteCard key={n.id} note={n} myId={session.userId} isDark={isDark}/>)}
+        <div ref={bottomRef}/>
+      </div>
+
+      <Compose onSend={sendNote} isDark={isDark}/>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
