@@ -1450,7 +1450,12 @@ function App(){
     const g={panning:false,pinching:false,panStart:null,pinchStart:null};
 
     const getVP=()=>viewportRefState.current;
-    const setVP=(next)=>setViewport(next);
+    const setVP=(next)=>{
+      // Si next es función (updater), la llamamos con el valor actual del ref
+      const resolved=typeof next==='function'?next(viewportRefState.current):next;
+      viewportRefState.current=resolved; // actualizar ref inmediatamente
+      setViewport(resolved);
+    };
 
     // ── Wheel ──
     const onWheel=(e)=>{
@@ -1516,7 +1521,8 @@ function App(){
       if(g.panning&&!draggingEl.current){
         const p=e.touches?e.touches[0]:e;
         const s=g.panStart;if(!s)return;
-        setVP(cur=>({...cur,tx:s.tx+(p.clientX-s.cx),ty:s.ty+(p.clientY-s.cy)}));
+        const vp=getVP();
+        setVP({...vp,tx:s.tx+(p.clientX-s.cx),ty:s.ty+(p.clientY-s.cy)});
       }
     };
 
