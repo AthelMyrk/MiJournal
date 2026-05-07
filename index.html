@@ -82,12 +82,79 @@ textarea{font-family:inherit;resize:none;outline:none;border:none;background:tra
 
 /* ── Board ───────────────────────────────────────────────── */
 .board{position:relative;width:100%;height:100%;overflow:hidden;transition:background .8s var(--ease-soft);}
-.board-content{position:absolute;left:0;right:0;top:120px;bottom:100px;overflow:hidden;z-index:1;}
+
+/* ── Canvas system ───────────────────────────────────────── */
+.canvas-viewport{
+  position:absolute;left:0;right:0;top:0;bottom:0;overflow:hidden;
+  cursor:grab;touch-action:none;
+  z-index:1;
+}
+.canvas-viewport.panning{cursor:grabbing;}
+.canvas-viewport.spacing{cursor:grab;}
+
+/* El canvas real, transformado con pan/zoom */
+.canvas-world{
+  position:absolute;left:50%;top:50%;width:0;height:0;
+  transform-origin:0 0;
+  will-change:transform;
+}
+
+/* Indicador de zoom flotante */
+.zoom-indicator{
+  position:absolute;bottom:max(28px,calc(env(safe-area-inset-bottom) + 16px));
+  right:18px;z-index:50;
+  display:flex;align-items:center;gap:6px;
+  padding:6px 8px;border-radius:11px;
+  background:var(--glass-n-bg);
+  backdrop-filter:blur(16px) saturate(160%);
+  -webkit-backdrop-filter:blur(16px) saturate(160%);
+  border:1px solid var(--glass-n-border);
+  box-shadow:0 4px 12px rgba(0,0,0,.3),0 1px 0 rgba(255,255,255,0.08) inset;
+  font-family:'DM Mono',monospace;font-size:10px;
+  color:var(--text-n-soft);letter-spacing:.05em;
+  pointer-events:auto;
+}
+.zoom-indicator::before{
+  content:'';position:absolute;top:0;left:20%;right:20%;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.16) 50%,transparent);
+  pointer-events:none;
+}
+.zoom-indicator.light{background:var(--glass-d-bg);border-color:var(--glass-d-border);color:var(--text-d-soft);}
+.zoom-indicator button{
+  background:none;border:none;color:inherit;cursor:pointer;
+  width:22px;height:22px;border-radius:7px;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .2s var(--ease-soft);
+}
+.zoom-indicator button:hover{background:rgba(255,255,255,.1);color:var(--text-n);}
+.zoom-indicator.light button:hover{background:rgba(20,30,50,.08);color:var(--text-d);}
+.zoom-value{min-width:42px;text-align:center;}
+
+/* Botón centrar */
+.center-btn{
+  position:absolute;bottom:max(28px,calc(env(safe-area-inset-bottom) + 16px));
+  left:18px;z-index:50;
+  width:36px;height:36px;border-radius:11px;
+  background:var(--glass-n-bg);
+  backdrop-filter:blur(16px) saturate(160%);
+  -webkit-backdrop-filter:blur(16px) saturate(160%);
+  border:1px solid var(--glass-n-border);
+  color:var(--text-n);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 12px rgba(0,0,0,.3),0 1px 0 rgba(255,255,255,0.08) inset;
+  transition:all .25s var(--ease-soft);
+}
+.center-btn::before{
+  content:'';position:absolute;top:0;left:20%;right:20%;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.18) 50%,transparent);
+  pointer-events:none;border-radius:11px 11px 0 0;
+}
+.center-btn:hover{background:rgba(30,40,60,0.7);transform:translateY(-1px);}
+.center-btn.light{background:var(--glass-d-bg);border-color:var(--glass-d-border);color:var(--text-d);}
+.center-btn.light:hover{background:rgba(255,255,255,.65);}
 
 /* ── Background SVG ──────────────────────────────────────── */
-.bgsvg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;transition:transform 1.2s var(--ease-out-expo);}
-.bg-fog{position:absolute;inset:0;pointer-events:none;mix-blend-mode:screen;opacity:.5;}
-.bg-fog.dark{mix-blend-mode:lighten;opacity:.35;}
+.bgsvg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
 
 /* ── Board Elements ──────────────────────────────────────── */
 .board-el{position:absolute;cursor:grab;user-select:none;transition:filter .3s var(--ease-soft);}
@@ -632,7 +699,10 @@ body:has(.overlay) .board-el:hover{z-index:auto !important;}
   .toolbar{padding:6px 8px;border-radius:16px;gap:4px;}
   .tbtn{width:40px;height:40px;border-radius:12px;}
   .tbtn-label{font-size:12px;padding:0 6px 0 2px;}
-  .board-content{top:108px;bottom:96px;}
+  .zoom-indicator{padding:5px 6px;font-size:9px;}
+  .zoom-indicator button{width:20px;height:20px;}
+  .zoom-value{min-width:36px;}
+  .center-btn{width:32px;height:32px;}
   .modal{padding:18px;border-radius:18px;}
   .ocard{padding:28px 22px;}
   .otitle{font-size:2rem;}
@@ -740,22 +810,17 @@ const applyY2K=(canvas,src)=>new Promise(res=>{
 });
 
 // ═══════════════════════════════════════════════════════════
-// Outdoor Background — atmósfera viva con parallax y niebla
+// Outdoor Background — viewport-fixed, no se mueve con el pan
 // ═══════════════════════════════════════════════════════════
-function OutdoorBg({isDark,parallax}){
-  // parallax: {x: -1 to 1, y: -1 to 1}
-  const px=parallax?.x||0, py=parallax?.y||0;
-
+function OutdoorBg({isDark}){
   return(
     <>
     <svg
       className="bgsvg"
       preserveAspectRatio="xMidYMid slice"
       viewBox="0 0 1200 800"
-      style={{transform:`translate(${px*-12}px, ${py*-8}px) scale(1.04)`}}
     >
       <defs>
-        {/* Cielo más rico, multi-stop */}
         <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
           {isDark?<>
             <stop offset="0%" stopColor="#03050a"/>
@@ -771,7 +836,6 @@ function OutdoorBg({isDark,parallax}){
           </>}
         </linearGradient>
 
-        {/* Tinte cálido del horizonte */}
         <linearGradient id="horizon" x1="0" y1="0" x2="0" y2="1">
           {isDark?<>
             <stop offset="0%" stopColor="#1a2545" stopOpacity="0"/>
@@ -795,7 +859,6 @@ function OutdoorBg({isDark,parallax}){
                  :<><stop offset="0%" stopColor="#85a98c"/><stop offset="100%" stopColor="#65876e"/></>}
         </linearGradient>
 
-        {/* Halo del sol/luna */}
         <radialGradient id="orb-halo">
           {isDark?<>
             <stop offset="0%" stopColor="#f8f4e0" stopOpacity="0.85"/>
@@ -809,10 +872,8 @@ function OutdoorBg({isDark,parallax}){
         </radialGradient>
 
         <filter id="blur1"><feGaussianBlur stdDeviation="1.5"/></filter>
-        <filter id="blur-soft"><feGaussianBlur stdDeviation="3"/></filter>
         <filter id="glow"><feGaussianBlur stdDeviation="6"/></filter>
 
-        {/* Aurora muy sutil para noche */}
         <linearGradient id="aurora" x1="0" y1="0" x2="1" y2="0">
           <stop offset="0%" stopColor="#3d6a8a" stopOpacity="0"/>
           <stop offset="40%" stopColor="#5a8aa8" stopOpacity="0.18"/>
@@ -821,27 +882,22 @@ function OutdoorBg({isDark,parallax}){
         </linearGradient>
       </defs>
 
-      {/* Cielo base */}
       <rect width="1200" height="800" fill="url(#sky)"/>
-
-      {/* Tinte cálido del horizonte */}
       <rect x="0" y="380" width="1200" height="280" fill="url(#horizon)"/>
 
-      {/* Aurora sutil de noche */}
       {isDark&&(
-        <ellipse cx="600" cy="200" rx="700" ry="80" fill="url(#aurora)" filter="url(#blur-soft)" opacity="0.6">
+        <ellipse cx="600" cy="200" rx="700" ry="80" fill="url(#aurora)" filter="url(#blur1)" opacity="0.6">
           <animate attributeName="cx" values="500;700;500" dur="40s" repeatCount="indefinite"/>
         </ellipse>
       )}
 
-      {/* Estrellas — capa lejana, mucha cantidad, opacidad baja */}
+      {/* Estrellas */}
       {isDark&&Array.from({length:120}).map((_,i)=>{
         const x=(i*97+30)%1200;
         const y=(i*53)%420;
         const r=Math.random()*0.6+0.15;
         return <circle key={'s1-'+i} cx={x} cy={y} r={r} fill="#e8e4f0" opacity={Math.random()*0.5+0.15}/>;
       })}
-      {/* Estrellas — capa media con titilar */}
       {isDark&&Array.from({length:35}).map((_,i)=>{
         const x=(i*137+70)%1200;
         const y=(i*73+20)%380;
@@ -853,7 +909,6 @@ function OutdoorBg({isDark,parallax}){
           </circle>
         );
       })}
-      {/* Estrellas brillantes con halo */}
       {isDark&&[[180,80],[420,140],[760,90],[1020,160],[280,210]].map(([x,y],i)=>(
         <g key={'s3-'+i}>
           <circle cx={x} cy={y} r="3" fill="#fff8e8" opacity="0.5" filter="url(#glow)"/>
@@ -863,9 +918,9 @@ function OutdoorBg({isDark,parallax}){
         </g>
       ))}
 
-      {/* Sol o Luna con halo radial */}
+      {/* Sol o luna */}
       {isDark?(
-        <g style={{transform:`translate(${px*-25}px, ${py*-15}px)`}}>
+        <g>
           <circle cx="900" cy="100" r="120" fill="url(#orb-halo)"/>
           <circle cx="900" cy="100" r="32" fill="#f0e8c8" opacity="0.92"/>
           <circle cx="894" cy="96" r="3" fill="#c8c0a0" opacity="0.4"/>
@@ -873,45 +928,27 @@ function OutdoorBg({isDark,parallax}){
           <circle cx="897" cy="108" r="2" fill="#c8c0a0" opacity="0.3"/>
         </g>
       ):(
-        <g style={{transform:`translate(${px*-25}px, ${py*-15}px)`}}>
+        <g>
           <circle cx="950" cy="110" r="140" fill="url(#orb-halo)"/>
           <circle cx="950" cy="110" r="44" fill="#fff9d8" opacity="0.96"/>
           <circle cx="950" cy="110" r="38" fill="#fffce8" opacity="0.6"/>
         </g>
       )}
 
-      {/* Montañas lejanas — más profundidad */}
-      <polygon
-        points="0,800 0,500 100,420 220,470 360,380 500,440 640,360 780,420 920,360 1060,410 1200,370 1200,800"
-        fill="url(#mtn3)"
-        opacity={isDark?0.55:0.65}
-        style={{transform:`translateX(${px*4}px)`}}
-      />
-      {/* Capa media */}
-      <polygon
-        points="0,800 0,560 100,490 220,540 360,450 500,520 640,420 760,500 900,400 1040,490 1200,440 1200,800"
-        fill="url(#mtn2)"
-        style={{transform:`translateX(${px*7}px)`}}
-      />
-      {/* Capa cercana */}
-      <polygon
-        points="0,800 0,640 80,590 180,620 300,560 440,610 580,540 720,600 860,530 1000,590 1200,550 1200,800"
-        fill="url(#mtn1)"
-        style={{transform:`translateX(${px*11}px)`}}
-      />
+      {/* Montañas */}
+      <polygon points="0,800 0,500 100,420 220,470 360,380 500,440 640,360 780,420 920,360 1060,410 1200,370 1200,800" fill="url(#mtn3)" opacity={isDark?0.55:0.65}/>
+      <polygon points="0,800 0,560 100,490 220,540 360,450 500,520 640,420 760,500 900,400 1040,490 1200,440 1200,800" fill="url(#mtn2)"/>
+      <polygon points="0,800 0,640 80,590 180,620 300,560 440,610 580,540 720,600 860,530 1000,590 1200,550 1200,800" fill="url(#mtn1)"/>
 
-      {/* Cumbres nevadas */}
       {[[360,450],[640,420],[900,400],[220,540],[580,540]].map(([x,y],i)=>(
-        <polygon key={'snow-'+i} points={`${x},${y} ${x-18},${y+30} ${x+18},${y+30}`} fill={isDark?'#7090a8':'#ffffff'} opacity={isDark?.7:.92} style={{transform:`translateX(${px*8}px)`}}/>
+        <polygon key={'snow-'+i} points={`${x},${y} ${x-18},${y+30} ${x+18},${y+30}`} fill={isDark?'#7090a8':'#ffffff'} opacity={isDark?.7:.92}/>
       ))}
 
-      {/* Árboles — capa cercana */}
       {Array.from({length:32}).map((_,i)=>{
         const x=(i*39+8)%1200,y=680+(i%5)*16;
-        return <polygon key={'tree-'+i} points={`${x},${y} ${x-7},${y+22} ${x+7},${y+22}`} fill={isDark?'#060c12':'#1a3d22'} style={{transform:`translateX(${px*13}px)`}}/>;
+        return <polygon key={'tree-'+i} points={`${x},${y} ${x-7},${y+22} ${x+7},${y+22}`} fill={isDark?'#060c12':'#1a3d22'}/>;
       })}
 
-      {/* Nieve cayendo — solo de noche */}
       {isDark&&Array.from({length:32}).map((_,i)=>(
         <circle key={'snowflake-'+i} cx={(i*73+15)%1200} cy="0" r={Math.random()*0.7+0.7} fill="white" opacity={Math.random()*0.4+0.4}>
           <animate attributeName="cy" from="-10" to="810" dur={`${8+(i%6)}s`} repeatCount="indefinite" begin={`${i*.35}s`}/>
@@ -919,34 +956,6 @@ function OutdoorBg({isDark,parallax}){
         </circle>
       ))}
     </svg>
-
-    {/* Capas de niebla animada — overlay */}
-    <div className={"bg-fog"+(isDark?" dark":"")} style={{transform:`translate(${px*-4}px, 0)`}}>
-      <svg width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 1200 800">
-        <defs>
-          <linearGradient id="fog1" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={isDark?"#3a4a5a":"#ffffff"} stopOpacity="0"/>
-            <stop offset="50%" stopColor={isDark?"#3a4a5a":"#ffffff"} stopOpacity="0.4"/>
-            <stop offset="100%" stopColor={isDark?"#3a4a5a":"#ffffff"} stopOpacity="0"/>
-          </linearGradient>
-          <linearGradient id="fog2" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={isDark?"#4a5a70":"#fafaf2"} stopOpacity="0"/>
-            <stop offset="50%" stopColor={isDark?"#4a5a70":"#fafaf2"} stopOpacity="0.3"/>
-            <stop offset="100%" stopColor={isDark?"#4a5a70":"#fafaf2"} stopOpacity="0"/>
-          </linearGradient>
-          <filter id="fogBlur"><feGaussianBlur stdDeviation="20"/></filter>
-        </defs>
-        <ellipse cx="300" cy="540" rx="400" ry="50" fill="url(#fog1)" filter="url(#fogBlur)">
-          <animate attributeName="cx" values="200;500;200" dur="55s" repeatCount="indefinite"/>
-        </ellipse>
-        <ellipse cx="900" cy="500" rx="350" ry="45" fill="url(#fog2)" filter="url(#fogBlur)">
-          <animate attributeName="cx" values="1000;700;1000" dur="65s" repeatCount="indefinite"/>
-        </ellipse>
-        <ellipse cx="600" cy="580" rx="500" ry="40" fill="url(#fog1)" filter="url(#fogBlur)" opacity="0.5">
-          <animate attributeName="cx" values="400;800;400" dur="75s" repeatCount="indefinite"/>
-        </ellipse>
-      </svg>
-    </div>
     </>
   );
 }
@@ -1093,57 +1102,54 @@ function PostitModal({onSave,onCancel,isDark}){
 }
 
 // ═══════════════════════════════════════════════════════════
-// Board Element
+// Board Element — coordenadas en píxeles reales del canvas
 // ═══════════════════════════════════════════════════════════
-function BoardEl({el,myId,onMove,onDelete,onUpdateCaption,boardRef}){
+function BoardEl({el,myId,onMove,onDelete,onUpdateCaption,onPress,scale}){
   const elRef=useRef(null);
   const dragStart=useRef(null);
   const resizeStart=useRef(null);
-  const isMe=el.author_id===myId;
-
-  const getBoardSize=()=>{
-    const b=boardRef.current;
-    return b?{w:b.offsetWidth,h:b.offsetHeight}:{w:800,h:600};
-  };
-  const{w:boardW,h:boardH}=getBoardSize();
-  const pxX=Math.round((el.x/1000)*boardW);
-  const pxY=Math.round((el.y/1000)*boardH);
 
   const startDrag=useCallback((e)=>{
     if(e.target.closest('.resize-handle')||e.target.closest('.del-btn')||e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+    // Solo single-touch o mouse left button
+    if(e.touches&&e.touches.length>1)return;
     e.preventDefault();
+    e.stopPropagation();
+    onPress&&onPress(el.id);
     const s=e.touches?e.touches[0]:e;
-    const{w,h}=getBoardSize();
-    dragStart.current={mx:s.clientX,my:s.clientY,ex:el.x,ey:el.y,bw:w,bh:h};
+    dragStart.current={mx:s.clientX,my:s.clientY,ex:el.x,ey:el.y};
     const move=ev=>{
+      if(ev.touches&&ev.touches.length>1)return;
       const m=ev.touches?ev.touches[0]:ev;
-      const dx=m.clientX-dragStart.current.mx,dy=m.clientY-dragStart.current.my;
-      const ndx=Math.round((dx/dragStart.current.bw)*1000);
-      const ndy=Math.round((dy/dragStart.current.bh)*1000);
-      onMove(el.id,Math.max(0,Math.min(1000,dragStart.current.ex+ndx)),Math.max(0,Math.min(1000,dragStart.current.ey+ndy)));
+      const dx=(m.clientX-dragStart.current.mx)/scale;
+      const dy=(m.clientY-dragStart.current.my)/scale;
+      onMove(el.id,Math.round(dragStart.current.ex+dx),Math.round(dragStart.current.ey+dy));
     };
     const up=()=>{document.removeEventListener('mousemove',move);document.removeEventListener('mouseup',up);document.removeEventListener('touchmove',move);document.removeEventListener('touchend',up);};
     document.addEventListener('mousemove',move);document.addEventListener('mouseup',up);
     document.addEventListener('touchmove',move,{passive:false});document.addEventListener('touchend',up);
-  },[el,onMove]);
+  },[el,onMove,scale,onPress]);
 
   const startResize=useCallback((e)=>{
     e.preventDefault();e.stopPropagation();
+    if(e.touches&&e.touches.length>1)return;
     const s=e.touches?e.touches[0]:e;
     resizeStart.current={mx:s.clientX,my:s.clientY,w:el.w||200,h:el.h||200};
     const move=ev=>{
+      if(ev.touches&&ev.touches.length>1)return;
       const m=ev.touches?ev.touches[0]:ev;
-      const dx=m.clientX-resizeStart.current.mx,dy=m.clientY-resizeStart.current.my;
+      const dx=(m.clientX-resizeStart.current.mx)/scale;
+      const dy=(m.clientY-resizeStart.current.my)/scale;
       const nw=Math.max(120,resizeStart.current.w+dx),nh=Math.max(100,resizeStart.current.h+dy);
       onMove(el.id,el.x,el.y,nw,nh);
     };
     const up=()=>{document.removeEventListener('mousemove',move);document.removeEventListener('mouseup',up);document.removeEventListener('touchmove',move);document.removeEventListener('touchend',up);};
     document.addEventListener('mousemove',move);document.addEventListener('mouseup',up);
     document.addEventListener('touchmove',move,{passive:false});document.addEventListener('touchend',up);
-  },[el,onMove]);
+  },[el,onMove,scale]);
 
   const rot=el.rot||0;
-  const style={left:pxX,top:pxY,transform:`rotate(${rot}deg)`,zIndex:el.z||1};
+  const style={left:el.x,top:el.y,transform:`rotate(${rot}deg)`,zIndex:el.z||1};
 
   if(el.type==='postit'){
     const nc=PCOLORS.find(c=>c.id===el.color)||PCOLORS[0];
@@ -1181,7 +1187,7 @@ function BoardEl({el,myId,onMove,onDelete,onUpdateCaption,boardRef}){
   }
 
   if(el.type==='polaroid'){
-    const w=el.w||190,imgH=Math.round(w*.95),footH=58;
+    const w=el.w||190,imgH=Math.round(w*.95);
     return(
       <div ref={elRef} className="board-el el-in" style={style}
         onMouseDown={startDrag} onTouchStart={startDrag}>
@@ -1214,22 +1220,11 @@ function Onboarding({onDone}){
   const [code,setCode]=useState('');
   const [loading,setLoading]=useState(false);
   const [err,setErr]=useState('');
-  const [parallax,setParallax]=useState({x:0,y:0});
 
   useEffect(()=>{
     const params=new URLSearchParams(window.location.search);
     const room=params.get('room');
     if(room){setCode(room);setStep('join');}
-  },[]);
-
-  useEffect(()=>{
-    const onMove=(e)=>{
-      const x=(e.clientX/window.innerWidth)*2-1;
-      const y=(e.clientY/window.innerHeight)*2-1;
-      setParallax({x,y});
-    };
-    window.addEventListener('mousemove',onMove);
-    return()=>window.removeEventListener('mousemove',onMove);
   },[]);
 
   const create=async()=>{
@@ -1259,7 +1254,7 @@ function Onboarding({onDone}){
   const isDark=getIsDark();
   return(
     <div className="onboard" style={{background:isDark?'#03050a':'#cae5f0'}}>
-      <OutdoorBg isDark={isDark} parallax={parallax}/>
+      <OutdoorBg isDark={isDark}/>
       <div className={`ocard${!isDark?' light':''}`}>
         <div className="obrand">
           <div className="obrand-mark"><Icon.Logo className="icon-lg" style={{color:isDark?'#e8e4f0':'#1a2840'}}/></div>
@@ -1297,8 +1292,10 @@ function Onboarding({onDone}){
 }
 
 // ═══════════════════════════════════════════════════════════
-// Main App
+// Main App — canvas navegable
 // ═══════════════════════════════════════════════════════════
+const MIN_ZOOM=0.25, MAX_ZOOM=2.0, ZOOM_STEP=0.15;
+
 function App(){
   const [session,setSession]=useState(null);
   const [elements,setElements]=useState([]);
@@ -1311,11 +1308,30 @@ function App(){
   const [showInvite,setShowInvite]=useState(false);
   const [inviteUrl,setInviteUrl]=useState('');
   const [isFullscreen,setIsFullscreen]=useState(false);
-  const [parallax,setParallax]=useState({x:0,y:0});
-  const boardRef=useRef(null);
+
+  // Viewport: tx/ty es el offset del canvas-world dentro del viewport, scale es zoom
+  const [viewport,setViewport]=useState(()=>{
+    const saved=ls.get('viewport_'+ls.get('roomId'));
+    return saved||{tx:0,ty:0,scale:1};
+  });
+  const [isPanning,setIsPanning]=useState(false);
+  const [spaceDown,setSpaceDown]=useState(false);
+
+  const viewportRef=useRef(null);
   const fileRef=useRef(null);
   const filterCanvas=useRef(document.createElement('canvas'));
   const dark=manual?manual==='night':isDark;
+
+  // Gesture state — refs para no re-renderizar a 60fps
+  const gestureRef=useRef({
+    panning:false,
+    panStart:null,
+    pinching:false,
+    pinchStart:null,
+    lastTap:0,
+  });
+  const viewportRefState=useRef(viewport);
+  useEffect(()=>{viewportRefState.current=viewport;},[viewport]);
 
   const toggleFullscreen=async()=>{
     try{
@@ -1337,27 +1353,6 @@ function App(){
     return()=>{document.removeEventListener('fullscreenchange',onFs);document.removeEventListener('webkitfullscreenchange',onFs);};
   },[]);
 
-  // Parallax mouse tracking — solo desktop, throttled
-  useEffect(()=>{
-    let raf=null;
-    let target={x:0,y:0};
-    const onMove=(e)=>{
-      target.x=(e.clientX/window.innerWidth)*2-1;
-      target.y=(e.clientY/window.innerHeight)*2-1;
-      if(!raf){
-        raf=requestAnimationFrame(()=>{
-          setParallax({x:target.x,y:target.y});
-          raf=null;
-        });
-      }
-    };
-    // Solo enganchar en pantallas con hover (desktop)
-    if(window.matchMedia('(hover:hover)').matches){
-      window.addEventListener('mousemove',onMove);
-    }
-    return()=>{window.removeEventListener('mousemove',onMove);if(raf)cancelAnimationFrame(raf);};
-  },[]);
-
   useEffect(()=>{
     const i=setInterval(()=>setIsDark(getIsDark()),60000);
     return()=>clearInterval(i);
@@ -1369,6 +1364,39 @@ function App(){
     else setReady(true);
   },[]);
 
+  // Persistir viewport por sala con throttle
+  useEffect(()=>{
+    if(!session)return;
+    const t=setTimeout(()=>{
+      ls.set('viewport_'+session.roomId,viewport);
+    },300);
+    return()=>clearTimeout(t);
+  },[viewport,session]);
+
+  // Cargar viewport guardado al iniciar sesión
+  useEffect(()=>{
+    if(!session)return;
+    const saved=ls.get('viewport_'+session.roomId);
+    if(saved&&typeof saved.scale==='number'){
+      setViewport(saved);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[session?.roomId]);
+
+  // Space key para pan en desktop
+  useEffect(()=>{
+    const down=(e)=>{
+      if(e.code==='Space'&&!e.repeat&&document.activeElement?.tagName!=='INPUT'&&document.activeElement?.tagName!=='TEXTAREA'){
+        e.preventDefault();setSpaceDown(true);
+      }
+    };
+    const up=(e)=>{if(e.code==='Space'){setSpaceDown(false);}};
+    window.addEventListener('keydown',down);
+    window.addEventListener('keyup',up);
+    return()=>{window.removeEventListener('keydown',down);window.removeEventListener('keyup',up);};
+  },[]);
+
+  // Cargar elementos del día actual
   useEffect(()=>{
     if(!session)return;
     const loadElements=()=>{
@@ -1379,9 +1407,13 @@ function App(){
         .lte('created_at',currentDay+'T23:59:59')
         .then(({data})=>{
           if(data){
+            // Migración: si las coordenadas están en rango 0-1000 (viejas normalizadas),
+            // convertirlas a píxeles centrados. Si ya son píxeles reales (pueden ser negativas), dejarlas.
             const migrated=data.map(el=>{
-              if(el.x>1000||el.y>1000){
-                return{...el,x:Math.min(900,Math.round((el.x/1900)*1000)),y:Math.min(900,Math.round((el.y/900)*1000))};
+              if(el.x>=0&&el.x<=1000&&el.y>=0&&el.y<=1000&&!el._migrated){
+                // Convertir 0-1000 normalizado a px centrado en (0,0)
+                // 500,400 era el centro original — eso ahora es (0,0)
+                return{...el,x:Math.round((el.x-500)*1.6),y:Math.round((el.y-400)*1.6)};
               }
               return el;
             });
@@ -1404,11 +1436,163 @@ function App(){
     return()=>{clearInterval(pollInterval);sb.removeChannel(ch);};
   },[session,currentDay]);
 
+  // ═══════════════════════════════════════════════════════════
+  // Pan & Zoom — gestos
+  // ═══════════════════════════════════════════════════════════
+
+  // Zoom con la rueda — zoom hacia el cursor
+  const onWheel=useCallback((e)=>{
+    e.preventDefault();
+    const vp=viewportRefState.current;
+    const delta=-e.deltaY*0.0015;
+    const newScale=Math.max(MIN_ZOOM,Math.min(MAX_ZOOM,vp.scale*(1+delta)));
+    if(newScale===vp.scale)return;
+    // Mantener el punto bajo el cursor fijo
+    const r=viewportRef.current.getBoundingClientRect();
+    const cx=e.clientX-r.left-r.width/2;
+    const cy=e.clientY-r.top-r.height/2;
+    const ratio=newScale/vp.scale;
+    const newTx=cx-(cx-vp.tx)*ratio;
+    const newTy=cy-(cy-vp.ty)*ratio;
+    setViewport({tx:newTx,ty:newTy,scale:newScale});
+  },[]);
+
+  // Pan handler (mouse/touch) — solo cuando NO estoy interactuando con un elemento
+  const onPointerDown=useCallback((e)=>{
+    // Si el target está en un board-el, dejá que ese maneje
+    if(e.target.closest('.board-el'))return;
+    // Single touch o mouse
+    if(e.touches){
+      if(e.touches.length===1){
+        e.preventDefault();
+        const t=e.touches[0];
+        gestureRef.current.panning=true;
+        gestureRef.current.panStart={cx:t.clientX,cy:t.clientY,vx:viewportRefState.current.tx,vy:viewportRefState.current.ty};
+        setIsPanning(true);
+      } else if(e.touches.length===2){
+        e.preventDefault();
+        const t1=e.touches[0],t2=e.touches[1];
+        const dist=Math.hypot(t2.clientX-t1.clientX,t2.clientY-t1.clientY);
+        const cx=(t1.clientX+t2.clientX)/2;
+        const cy=(t1.clientY+t2.clientY)/2;
+        gestureRef.current.pinching=true;
+        gestureRef.current.panning=false;
+        gestureRef.current.pinchStart={dist,cx,cy,vp:{...viewportRefState.current}};
+        setIsPanning(true);
+      }
+    } else {
+      // Mouse — pan con space+left, middle button, o sin nada cuando target es viewport
+      if(e.button===1||(e.button===0&&(spaceDown||e.target===viewportRef.current||e.target.classList.contains('canvas-world')))){
+        e.preventDefault();
+        gestureRef.current.panning=true;
+        gestureRef.current.panStart={cx:e.clientX,cy:e.clientY,vx:viewportRefState.current.tx,vy:viewportRefState.current.ty};
+        setIsPanning(true);
+      }
+    }
+  },[spaceDown]);
+
+  const onPointerMove=useCallback((e)=>{
+    if(e.touches&&e.touches.length===2&&gestureRef.current.pinching){
+      e.preventDefault();
+      const t1=e.touches[0],t2=e.touches[1];
+      const dist=Math.hypot(t2.clientX-t1.clientX,t2.clientY-t1.clientY);
+      const cx=(t1.clientX+t2.clientX)/2;
+      const cy=(t1.clientY+t2.clientY)/2;
+      const start=gestureRef.current.pinchStart;
+      const ratio=dist/start.dist;
+      const newScale=Math.max(MIN_ZOOM,Math.min(MAX_ZOOM,start.vp.scale*ratio));
+      // Centrar en el punto medio del pinch
+      const r=viewportRef.current.getBoundingClientRect();
+      const px=start.cx-r.left-r.width/2;
+      const py=start.cy-r.top-r.height/2;
+      const sr=newScale/start.vp.scale;
+      const dx=(cx-start.cx);
+      const dy=(cy-start.cy);
+      setViewport({
+        tx:px-(px-start.vp.tx)*sr+dx,
+        ty:py-(py-start.vp.ty)*sr+dy,
+        scale:newScale,
+      });
+      return;
+    }
+    if(gestureRef.current.panning){
+      e.preventDefault();
+      const p=e.touches?e.touches[0]:e;
+      const start=gestureRef.current.panStart;
+      const dx=p.clientX-start.cx;
+      const dy=p.clientY-start.cy;
+      setViewport(v=>({...v,tx:start.vx+dx,ty:start.vy+dy}));
+    }
+  },[]);
+
+  const onPointerUp=useCallback((e)=>{
+    if(gestureRef.current.pinching&&(!e.touches||e.touches.length<2)){
+      gestureRef.current.pinching=false;
+      // Si queda un dedo, transferir a pan
+      if(e.touches&&e.touches.length===1){
+        const t=e.touches[0];
+        gestureRef.current.panning=true;
+        gestureRef.current.panStart={cx:t.clientX,cy:t.clientY,vx:viewportRefState.current.tx,vy:viewportRefState.current.ty};
+        return;
+      }
+    }
+    if(gestureRef.current.panning){
+      gestureRef.current.panning=false;
+      setIsPanning(false);
+    }
+  },[]);
+
+  // Listeners globales para pan/zoom
+  useEffect(()=>{
+    const v=viewportRef.current;if(!v)return;
+    v.addEventListener('wheel',onWheel,{passive:false});
+    v.addEventListener('mousedown',onPointerDown);
+    v.addEventListener('touchstart',onPointerDown,{passive:false});
+    document.addEventListener('mousemove',onPointerMove);
+    document.addEventListener('touchmove',onPointerMove,{passive:false});
+    document.addEventListener('mouseup',onPointerUp);
+    document.addEventListener('touchend',onPointerUp);
+    return()=>{
+      v.removeEventListener('wheel',onWheel);
+      v.removeEventListener('mousedown',onPointerDown);
+      v.removeEventListener('touchstart',onPointerDown);
+      document.removeEventListener('mousemove',onPointerMove);
+      document.removeEventListener('touchmove',onPointerMove);
+      document.removeEventListener('mouseup',onPointerUp);
+      document.removeEventListener('touchend',onPointerUp);
+    };
+  },[onWheel,onPointerDown,onPointerMove,onPointerUp]);
+
+  // Zoom buttons
+  const zoomIn=()=>{
+    const vp=viewportRefState.current;
+    const newScale=Math.min(MAX_ZOOM,vp.scale*(1+ZOOM_STEP));
+    setViewport({...vp,scale:newScale});
+  };
+  const zoomOut=()=>{
+    const vp=viewportRefState.current;
+    const newScale=Math.max(MIN_ZOOM,vp.scale*(1-ZOOM_STEP));
+    setViewport({...vp,scale:newScale});
+  };
+  const centerView=()=>{
+    setViewport({tx:0,ty:0,scale:1});
+  };
+
+  // ═══════════════════════════════════════════════════════════
+  // Element actions
+  // ═══════════════════════════════════════════════════════════
+
   const addElement=async(data)=>{
     if(!session)return;
+    // Posición: en el centro del viewport actual del usuario, en world coords
+    const vp=viewportRefState.current;
+    const wx=Math.round(-vp.tx/vp.scale);
+    const wy=Math.round(-vp.ty/vp.scale);
+    const jitter=80;
     const el={
       room_id:session.roomId,author_id:session.userId,author_name:session.userName,
-      x:450+Math.round((Math.random()-.5)*100),y:400+Math.round((Math.random()-.5)*100),
+      x:wx+Math.round((Math.random()-.5)*jitter),
+      y:wy+Math.round((Math.random()-.5)*jitter),
       rot:randRot(),z:Date.now(),...data,
       created_at:new Date().toISOString(),
     };
@@ -1419,6 +1603,13 @@ function App(){
     const upd={x,y};if(w!==undefined)upd.w=w;if(h!==undefined)upd.h=h;
     setElements(prev=>prev.map(e=>e.id===id?{...e,...upd}:e));
     await sb.from('murmur_notes').update(upd).eq('id',id);
+  },[]);
+
+  const pressElement=useCallback(async(id)=>{
+    // Bring to front (z-index = now)
+    const z=Date.now();
+    setElements(prev=>prev.map(e=>e.id===id?{...e,z}:e));
+    sb.from('murmur_notes').update({z}).eq('id',id);
   },[]);
 
   const deleteElement=async(id)=>{
@@ -1456,10 +1647,11 @@ function App(){
 
   const isToday=currentDay===todayStr();
   const lightCls=dark?'':' light';
+  const zoomPct=Math.round(viewport.scale*100);
 
   return(
     <div className="board" data-light={!dark} style={{background:dark?'#03050a':'#cae5f0'}}>
-      <OutdoorBg isDark={dark} parallax={parallax}/>
+      <OutdoorBg isDark={dark}/>
 
       {/* Invite modal */}
       {showInvite&&(
@@ -1507,13 +1699,25 @@ function App(){
         <button onClick={()=>changeDay(1)} disabled={isToday}><Icon.ChevronRight className="icon-sm"/></button>
       </div>
 
-      {/* Board elements */}
-      <div className="board-content" ref={boardRef}>
-        {elements.map(el=>(
-          <BoardEl key={el.id} el={el} myId={session.userId}
-            onMove={moveElement} onDelete={deleteElement} onUpdateCaption={updateCaption} boardRef={boardRef}/>
-        ))}
+      {/* Canvas viewport - el contenedor que captura gestos */}
+      <div
+        ref={viewportRef}
+        className={`canvas-viewport${isPanning?' panning':''}${spaceDown?' spacing':''}`}
+      >
+        {/* Canvas world - se transforma con pan/zoom */}
+        <div
+          className="canvas-world"
+          style={{transform:`translate(${viewport.tx}px, ${viewport.ty}px) scale(${viewport.scale})`}}
+        >
+          {elements.map(el=>(
+            <BoardEl key={el.id} el={el} myId={session.userId}
+              onMove={moveElement} onDelete={deleteElement}
+              onUpdateCaption={updateCaption} onPress={pressElement}
+              scale={viewport.scale}/>
+          ))}
+        </div>
 
+        {/* Empty state — fixed in viewport, no en world */}
         {elements.length===0&&ready&&(
           <div className="empty-state">
             <div className="empty-mark">
@@ -1524,6 +1728,21 @@ function App(){
             </div>
           </div>
         )}
+      </div>
+
+      {/* Center button */}
+      <button className={`center-btn${lightCls}`} onClick={centerView} title="Centrar">
+        <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M12 2v4M12 18v4M2 12h4M18 12h4" strokeLinecap="round"/>
+        </svg>
+      </button>
+
+      {/* Zoom indicator */}
+      <div className={`zoom-indicator${lightCls}`}>
+        <button onClick={zoomOut} title="Zoom out"><Icon.X className="icon-sm" style={{transform:'rotate(45deg)'}}/></button>
+        <span className="zoom-value">{zoomPct}%</span>
+        <button onClick={zoomIn} title="Zoom in"><Icon.Plus className="icon-sm"/></button>
       </div>
 
       {/* Toolbar */}
