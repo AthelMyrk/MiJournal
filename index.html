@@ -2,130 +2,633 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-title" content="MurmurTether"/>
 <meta name="theme-color" content="#0a0a0a"/>
 <title>MurmurTether</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;1,400&family=Lora:ital@0;1&family=DM+Mono&family=Caveat:wght@400;600&family=Cormorant+Garamond:ital,wght@0,300;1,300&family=Space+Grotesk:wght@300;400&display=swap" rel="stylesheet"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;1,400&family=Lora:ital@0;1&family=DM+Mono&family=Caveat:wght@400;600&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Space+Grotesk:wght@300;400;500&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
+/* ═══════════════════════════════════════════════════════════
+   MurmurTether — Y2K elegante
+   Vidrio real, cromados sutiles, atmósfera viva
+   ═══════════════════════════════════════════════════════════ */
+
+:root{
+  /* Glass tokens — noche */
+  --glass-n-bg: rgba(14,18,28,0.55);
+  --glass-n-bg-strong: rgba(14,18,28,0.78);
+  --glass-n-border: rgba(255,255,255,0.10);
+  --glass-n-highlight: rgba(255,255,255,0.18);
+  --glass-n-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.06) inset;
+  --text-n: rgba(232,232,236,0.92);
+  --text-n-soft: rgba(232,232,236,0.55);
+  --text-n-faint: rgba(232,232,236,0.32);
+
+  /* Glass tokens — día */
+  --glass-d-bg: rgba(255,255,255,0.42);
+  --glass-d-bg-strong: rgba(252,250,245,0.82);
+  --glass-d-border: rgba(255,255,255,0.55);
+  --glass-d-highlight: rgba(255,255,255,0.85);
+  --glass-d-shadow: 0 8px 32px rgba(40,60,80,0.18), 0 1px 0 rgba(255,255,255,0.6) inset;
+  --text-d: rgba(28,32,40,0.88);
+  --text-d-soft: rgba(28,32,40,0.5);
+  --text-d-faint: rgba(28,32,40,0.3);
+
+  /* Easing */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-soft: cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
 *{box-sizing:border-box;margin:0;padding:0;}
 html,body,#root{height:100%;width:100%;overflow:hidden;-webkit-tap-highlight-color:transparent;}
-body{font-family:'Space Grotesk',system-ui,sans-serif;-webkit-text-size-adjust:100%;}
-@keyframes fadeIn{from{opacity:0;transform:scale(.94);}to{opacity:1;transform:scale(1);}}
-@keyframes flicker{0%,100%{opacity:.5;}50%{opacity:1;}}
-.el-in{animation:fadeIn .3s ease forwards;}
-.candle{animation:flicker 2s ease-in-out infinite;display:inline-block;}
-input[type=range]{-webkit-appearance:none;height:3px;border-radius:2px;outline:none;cursor:pointer;}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;cursor:pointer;}
-input[type=color]{-webkit-appearance:none;border:none;padding:0;cursor:pointer;border-radius:50%;overflow:hidden;background:none;}
+body{
+  font-family:'Space Grotesk',system-ui,sans-serif;
+  -webkit-text-size-adjust:100%;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+
+/* ── Animations ──────────────────────────────────────────── */
+@keyframes fadeIn{from{opacity:0;transform:scale(.96) translateY(4px);}to{opacity:1;transform:scale(1) translateY(0);}}
+@keyframes flicker{0%,100%{opacity:.55;transform:scale(1);}50%{opacity:1;transform:scale(1.08);}}
+@keyframes breathe{0%,100%{transform:scale(1);}50%{transform:scale(1.02);}}
+@keyframes drift{0%,100%{transform:translateX(0);}50%{transform:translateX(20px);}}
+@keyframes shimmer{0%{background-position:-200% 0;}100%{background-position:200% 0;}}
+@keyframes twinkle{0%,100%{opacity:.3;}50%{opacity:1;}}
+@keyframes overlayIn{from{opacity:0;}to{opacity:1;}}
+@keyframes modalIn{from{opacity:0;transform:scale(.94) translateY(8px);}to{opacity:1;transform:scale(1) translateY(0);}}
+
+.el-in{animation:fadeIn .5s var(--ease-out-expo) forwards;}
+.candle{animation:flicker 2.4s ease-in-out infinite;display:inline-block;}
+
+/* ── Form elements ───────────────────────────────────────── */
+input[type=range]{-webkit-appearance:none;height:3px;border-radius:2px;outline:none;cursor:pointer;background:rgba(255,255,255,0.15);}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;cursor:pointer;background:#e8e8ec;box-shadow:0 0 0 1px rgba(0,0,0,.15),0 2px 6px rgba(0,0,0,.3);}
+input[type=color]{-webkit-appearance:none;border:none;padding:0;cursor:pointer;border-radius:50%;overflow:hidden;background:none;width:28px;height:28px;}
 input[type=color]::-webkit-color-swatch-wrapper{padding:0;}
-input[type=color]::-webkit-color-swatch{border:none;border-radius:50%;}
+input[type=color]::-webkit-color-swatch{border:1px solid rgba(255,255,255,.2);border-radius:50%;}
 textarea{font-family:inherit;resize:none;outline:none;border:none;background:transparent;}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.12);border-radius:2px;}
 
-/* Board */
-.board{position:relative;width:100%;height:100%;overflow:hidden;transition:background .6s;}
-/* Board content area - leaves space for UI */
-.board-content{position:absolute;left:0;right:0;top:110px;bottom:90px;overflow:hidden;}
+/* ── Board ───────────────────────────────────────────────── */
+.board{position:relative;width:100%;height:100%;overflow:hidden;transition:background .8s var(--ease-soft);}
+.board-content{position:absolute;left:0;right:0;top:120px;bottom:100px;overflow:hidden;}
 
-/* Elements on board */
-.board-el{position:absolute;cursor:grab;user-select:none;}
+/* ── Background SVG ──────────────────────────────────────── */
+.bgsvg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;transition:transform 1.2s var(--ease-out-expo);}
+.bg-fog{position:absolute;inset:0;pointer-events:none;mix-blend-mode:screen;opacity:.5;}
+.bg-fog.dark{mix-blend-mode:lighten;opacity:.35;}
+
+/* ── Board Elements ──────────────────────────────────────── */
+.board-el{position:absolute;cursor:grab;user-select:none;transition:filter .3s var(--ease-soft);}
+.board-el:hover{filter:brightness(1.03);z-index:100 !important;}
 .board-el:active{cursor:grabbing;}
-.board-el .del-btn{position:absolute;top:-10px;right:-10px;width:22px;height:22px;border-radius:50%;border:none;cursor:pointer;font-size:12px;display:none;align-items:center;justify-content:center;z-index:10;background:#e05555;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.3);}
+
+.del-btn{
+  position:absolute;top:-10px;right:-10px;width:24px;height:24px;border-radius:50%;
+  border:1px solid rgba(255,255,255,0.4);cursor:pointer;
+  display:none;align-items:center;justify-content:center;z-index:10;
+  background:rgba(220,60,80,0.95);color:#fff;
+  box-shadow:0 4px 12px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.1) inset;
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  transition:transform .2s var(--ease-soft);
+}
+.del-btn:hover{transform:scale(1.12);}
 .board-el:hover .del-btn{display:flex;}
-.resize-handle{position:absolute;bottom:0;right:0;width:16px;height:16px;cursor:se-resize;opacity:0;transition:opacity .2s;}
-.board-el:hover .resize-handle{opacity:.5;}
-.resize-handle::after{content:'';position:absolute;bottom:3px;right:3px;width:8px;height:8px;border-right:2px solid;border-bottom:2px solid;}
 
-/* Postit */
-.postit{border-radius:3px;padding:14px 16px 12px;min-width:120px;max-width:260px;position:relative;box-shadow:2px 3px 12px rgba(0,0,0,.18),0 1px 3px rgba(0,0,0,.1);}
-.postit::before{content:'';position:absolute;top:0;left:0;right:0;height:28px;background:rgba(0,0,0,.06);border-radius:3px 3px 0 0;}
-.postit-author{font-size:10px;opacity:.4;margin-bottom:8px;margin-top:2px;}
-.postit-text{font-size:14px;line-height:1.55;word-break:break-word;}
-.postit-time{font-size:9px;opacity:.3;margin-top:8px;text-align:right;}
+.resize-handle{
+  position:absolute;bottom:-2px;right:-2px;width:18px;height:18px;cursor:se-resize;
+  opacity:0;transition:opacity .25s var(--ease-soft);
+}
+.board-el:hover .resize-handle{opacity:.6;}
+.resize-handle::after{
+  content:'';position:absolute;bottom:4px;right:4px;width:8px;height:8px;
+  border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;
+}
 
-/* Sketch sheet */
-.sketch{background:#fefefe;border-radius:2px;position:relative;overflow:hidden;box-shadow:2px 4px 16px rgba(0,0,0,.2),0 1px 4px rgba(0,0,0,.1);}
-.sketch.dark-sheet{background:#1a1a1a;}
-.sketch-author{position:absolute;top:6px;left:10px;font-size:10px;opacity:.3;pointer-events:none;}
-.sketch-time{position:absolute;bottom:6px;right:10px;font-size:9px;opacity:.25;pointer-events:none;}
-.sketch canvas{display:block;width:100%;height:100%;}
+/* ── Postit ──────────────────────────────────────────────── */
+.postit{
+  border-radius:2px;padding:18px 18px 14px;min-width:130px;max-width:280px;position:relative;
+  box-shadow:
+    0 1px 1px rgba(0,0,0,0.08),
+    0 4px 8px rgba(0,0,0,0.10),
+    0 12px 24px rgba(0,0,0,0.14),
+    0 1px 0 rgba(255,255,255,0.6) inset;
+}
+.postit::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,
+    rgba(0,0,0,0.04) 0%,
+    rgba(255,255,255,0.5) 30%,
+    rgba(255,255,255,0.5) 70%,
+    rgba(0,0,0,0.04) 100%);
+}
+.postit::after{
+  content:'';position:absolute;top:0;right:0;width:18px;height:18px;
+  background:linear-gradient(225deg,rgba(0,0,0,0.06) 0%,rgba(0,0,0,0) 50%);
+  pointer-events:none;
+}
+.postit-author{
+  font-family:'Cormorant Garamond',serif;font-style:italic;
+  font-size:11px;opacity:.42;margin-bottom:10px;letter-spacing:.02em;
+}
+.postit-text{font-size:14px;line-height:1.6;word-break:break-word;}
+.postit-time{
+  font-family:'DM Mono',monospace;font-size:9px;opacity:.3;
+  margin-top:10px;text-align:right;letter-spacing:.05em;
+}
 
-/* Polaroid */
-.polaroid{background:#fff;border-radius:2px;box-shadow:2px 4px 18px rgba(0,0,0,.25),0 1px 4px rgba(0,0,0,.1);display:flex;flex-direction:column;}
-.polaroid-img{flex:1;overflow:hidden;}
+/* ── Sketch ──────────────────────────────────────────────── */
+.sketch{
+  background:#fafaf6;border-radius:2px;position:relative;overflow:hidden;
+  box-shadow:
+    0 1px 1px rgba(0,0,0,0.08),
+    0 4px 10px rgba(0,0,0,0.12),
+    0 14px 28px rgba(0,0,0,0.15);
+}
+.sketch.dark-sheet{background:#1a1c20;}
+.sketch::before{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background-image:
+    radial-gradient(circle at 20% 30%, rgba(0,0,0,0.025) 0%, transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(0,0,0,0.02) 0%, transparent 40%);
+}
+.sketch-author{
+  position:absolute;top:8px;left:12px;font-size:10px;opacity:.32;pointer-events:none;
+  font-family:'Cormorant Garamond',serif;font-style:italic;
+}
+.sketch-time{
+  position:absolute;bottom:8px;right:12px;font-size:9px;opacity:.28;pointer-events:none;
+  font-family:'DM Mono',monospace;letter-spacing:.05em;
+}
+.sketch img{display:block;width:100%;height:100%;}
+
+/* ── Polaroid ────────────────────────────────────────────── */
+.polaroid{
+  background:#fdfcf7;border-radius:2px;display:flex;flex-direction:column;
+  padding:10px 10px 0;
+  box-shadow:
+    0 1px 2px rgba(0,0,0,0.10),
+    0 6px 14px rgba(0,0,0,0.14),
+    0 18px 36px rgba(0,0,0,0.18),
+    0 1px 0 rgba(255,255,255,0.9) inset;
+}
+.polaroid-img{
+  flex:1;overflow:hidden;background:#000;
+  box-shadow:0 0 0 1px rgba(0,0,0,0.08) inset;
+}
 .polaroid-img img{width:100%;height:100%;object-fit:cover;display:block;}
-.polaroid-foot{padding:8px 12px 10px;background:#fff;}
-.polaroid-caption{font-family:'Caveat',cursive;font-size:14px;color:#333;text-align:center;border:none;outline:none;width:100%;background:transparent;}
-.polaroid-meta{font-size:9px;color:#aaa;text-align:right;margin-top:2px;}
+.polaroid-foot{padding:10px 4px 14px;background:transparent;}
+.polaroid-caption{
+  font-family:'Caveat',cursive;font-size:15px;color:#2a2a2a;
+  text-align:center;border:none;outline:none;width:100%;background:transparent;
+}
+.polaroid-caption::placeholder{color:#bbb;}
+.polaroid-meta{
+  font-family:'DM Mono',monospace;font-size:8.5px;color:#999;
+  text-align:right;margin-top:6px;letter-spacing:.06em;
+}
 
-/* Header */
-.header{position:absolute;top:0;left:0;right:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;padding-top:max(12px,env(safe-area-inset-top));pointer-events:none;}
+/* ═══════════════════════════════════════════════════════════
+   Glass Surfaces — la firma visual
+   ═══════════════════════════════════════════════════════════ */
+
+.glass{
+  background:var(--glass-n-bg);
+  backdrop-filter:blur(20px) saturate(180%);
+  -webkit-backdrop-filter:blur(20px) saturate(180%);
+  border:1px solid var(--glass-n-border);
+  box-shadow:var(--glass-n-shadow);
+  position:relative;
+}
+.glass::before{
+  content:'';position:absolute;top:0;left:8%;right:8%;height:1px;
+  background:linear-gradient(90deg,transparent,var(--glass-n-highlight) 50%,transparent);
+  pointer-events:none;
+}
+.glass.light{
+  background:var(--glass-d-bg);
+  border-color:var(--glass-d-border);
+  box-shadow:var(--glass-d-shadow);
+}
+.glass.light::before{background:linear-gradient(90deg,transparent,var(--glass-d-highlight) 50%,transparent);}
+
+.glass-strong{background:var(--glass-n-bg-strong);}
+.glass-strong.light{background:var(--glass-d-bg-strong);}
+
+/* ── Header ──────────────────────────────────────────────── */
+.header{
+  position:absolute;top:0;left:0;right:0;z-index:50;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 18px;padding-top:max(14px,env(safe-area-inset-top));
+  pointer-events:none;
+}
 .header > *{pointer-events:auto;}
-.header-title{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:300;font-size:1.15rem;color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.5);}
-.hbtn{padding:5px 10px;border-radius:10px;font-size:12px;cursor:pointer;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.35);color:rgba(255,255,255,.8);font-family:inherit;backdrop-filter:blur(8px);transition:background .2s;}
-.hbtn:hover{background:rgba(0,0,0,.5);}
-.hbtn.active{background:rgba(255,255,255,.2);color:#fff;}
 
-/* Toolbar */
-.toolbar{position:absolute;bottom:max(24px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:50;display:flex;align-items:center;gap:8px;background:rgba(10,10,10,.6);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:8px 14px;}
-.tbtn{width:38px;height:38px;border-radius:12px;border:1px solid rgba(255,255,255,.15);background:transparent;color:rgba(255,255,255,.7);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:background .2s,color .2s;font-family:inherit;}
-.tbtn:hover,.tbtn.active{background:rgba(255,255,255,.15);color:#fff;}
-.tbtn-label{font-size:10px;color:rgba(255,255,255,.4);letter-spacing:.05em;}
+.header-title{
+  font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:300;
+  font-size:1.35rem;color:rgba(255,255,255,.94);
+  text-shadow:0 1px 12px rgba(0,0,0,.6),0 0 24px rgba(0,0,0,.3);
+  letter-spacing:.01em;
+}
+.header-title.light{color:rgba(20,30,50,.85);text-shadow:0 1px 12px rgba(255,255,255,.6);}
 
-/* Day nav */
-.daynav{position:absolute;top:56px;left:50%;transform:translateX(-50%);z-index:50;display:flex;align-items:center;gap:10px;background:rgba(10,10,10,.45);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:5px 12px;}
-.daynav span{font-size:12px;color:rgba(255,255,255,.7);min-width:120px;text-align:center;}
-.daynav button{background:none;border:none;color:rgba(255,255,255,.5);cursor:pointer;font-size:16px;padding:0 4px;line-height:1;}
-.daynav button:hover{color:#fff;}
+.header-actions{display:flex;gap:8px;align-items:center;}
 
-/* Modal overlay */
-.overlay{position:fixed;inset:0;z-index:200;display:flex;align-items:flex-start;justify-content:center;padding:20px;padding-top:max(20px,env(safe-area-inset-top));background:rgba(0,0,0,.85);backdrop-filter:blur(8px);overflow-y:auto;-webkit-overflow-scrolling:touch;}
-.modal{background:#141414;border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:20px;width:100%;max-width:420px;display:flex;flex-direction:column;gap:14px;margin:auto 0;}
-.modal.light{background:#fafaf7;border-color:rgba(0,0,0,.1);}
-.modal h3{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:300;font-size:1.3rem;}
-.minput{width:100%;padding:10px 14px;border-radius:12px;font-size:16px;outline:none;border:1px solid rgba(255,255,255,.1);background:#0d0d0d;color:#e4e4e4;font-family:inherit;-webkit-appearance:none;}
-.minput.light{background:#f0eeea;border-color:rgba(0,0,0,.1);color:#1a1a1a;}
+.hbtn{
+  height:34px;min-width:34px;padding:0 12px;border-radius:11px;
+  font-size:12px;cursor:pointer;font-family:inherit;font-weight:500;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  background:var(--glass-n-bg);
+  backdrop-filter:blur(16px) saturate(160%);
+  -webkit-backdrop-filter:blur(16px) saturate(160%);
+  border:1px solid var(--glass-n-border);
+  color:var(--text-n);
+  box-shadow:0 2px 8px rgba(0,0,0,.25),0 1px 0 rgba(255,255,255,0.08) inset;
+  transition:all .25s var(--ease-soft);
+  position:relative;
+}
+.hbtn::before{
+  content:'';position:absolute;top:0;left:15%;right:15%;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.18) 50%,transparent);
+  pointer-events:none;border-radius:11px 11px 0 0;
+}
+.hbtn:hover{background:rgba(30,40,60,0.7);transform:translateY(-1px);}
+.hbtn.active{background:rgba(255,255,255,.18);color:#fff;}
+.hbtn.light{background:var(--glass-d-bg);border-color:var(--glass-d-border);color:var(--text-d);}
+.hbtn.light:hover{background:rgba(255,255,255,.65);}
+.hbtn.light.active{background:rgba(20,30,50,.12);color:rgba(20,30,50,.9);}
+
+.hbtn-group{
+  display:flex;border-radius:11px;overflow:hidden;
+  border:1px solid var(--glass-n-border);
+  background:var(--glass-n-bg);
+  backdrop-filter:blur(16px) saturate(160%);
+  -webkit-backdrop-filter:blur(16px) saturate(160%);
+  box-shadow:0 2px 8px rgba(0,0,0,.25),0 1px 0 rgba(255,255,255,0.08) inset;
+  position:relative;
+}
+.hbtn-group::before{
+  content:'';position:absolute;top:0;left:15%;right:15%;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.18) 50%,transparent);
+  pointer-events:none;
+}
+.hbtn-group.light{background:var(--glass-d-bg);border-color:var(--glass-d-border);}
+.hbtn-group .hbtn{
+  border:none;border-radius:0;background:transparent;box-shadow:none;height:34px;width:38px;padding:0;
+}
+.hbtn-group .hbtn::before{display:none;}
+.hbtn-group .hbtn.active{background:rgba(255,255,255,.16);}
+.hbtn-group.light .hbtn.active{background:rgba(20,30,50,.10);}
+
+.icon{width:14px;height:14px;stroke-width:1.5;stroke:currentColor;fill:none;flex-shrink:0;}
+.icon-sm{width:12px;height:12px;}
+.icon-lg{width:18px;height:18px;}
+
+/* ── Daynav ──────────────────────────────────────────────── */
+.daynav{
+  position:absolute;top:max(60px,calc(env(safe-area-inset-top) + 60px));
+  left:50%;transform:translateX(-50%);z-index:50;
+  display:flex;align-items:center;gap:6px;
+  padding:5px 8px;border-radius:13px;
+  background:var(--glass-n-bg);
+  backdrop-filter:blur(16px) saturate(160%);
+  -webkit-backdrop-filter:blur(16px) saturate(160%);
+  border:1px solid var(--glass-n-border);
+  box-shadow:0 4px 12px rgba(0,0,0,.3),0 1px 0 rgba(255,255,255,0.08) inset;
+}
+.daynav::before{
+  content:'';position:absolute;top:0;left:20%;right:20%;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.16) 50%,transparent);
+  pointer-events:none;
+}
+.daynav.light{background:var(--glass-d-bg);border-color:var(--glass-d-border);}
+.daynav .day-label{
+  font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:300;
+  font-size:14px;color:var(--text-n);min-width:130px;text-align:center;
+  letter-spacing:.02em;
+}
+.daynav.light .day-label{color:var(--text-d);}
+.daynav button{
+  background:none;border:none;color:var(--text-n-soft);
+  cursor:pointer;width:26px;height:26px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .2s var(--ease-soft);
+}
+.daynav button:hover:not(:disabled){background:rgba(255,255,255,.1);color:var(--text-n);}
+.daynav button:disabled{opacity:.25;cursor:default;}
+.daynav.light button{color:var(--text-d-soft);}
+.daynav.light button:hover:not(:disabled){background:rgba(20,30,50,.08);color:var(--text-d);}
+
+/* ── Toolbar ─────────────────────────────────────────────── */
+.toolbar{
+  position:absolute;
+  bottom:max(28px,calc(env(safe-area-inset-bottom) + 16px));
+  left:50%;transform:translateX(-50%);z-index:50;
+  display:flex;align-items:center;gap:6px;
+  padding:8px 10px;border-radius:18px;
+  background:var(--glass-n-bg-strong);
+  backdrop-filter:blur(24px) saturate(180%);
+  -webkit-backdrop-filter:blur(24px) saturate(180%);
+  border:1px solid var(--glass-n-border);
+  box-shadow:
+    0 12px 32px rgba(0,0,0,.4),
+    0 1px 0 rgba(255,255,255,.12) inset,
+    0 -1px 0 rgba(0,0,0,.2) inset;
+}
+.toolbar::before{
+  content:'';position:absolute;top:0;left:15%;right:15%;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.22) 50%,transparent);
+  pointer-events:none;border-radius:18px 18px 0 0;
+}
+.toolbar.light{background:var(--glass-d-bg-strong);border-color:var(--glass-d-border);}
+
+.tbtn{
+  width:42px;height:42px;border-radius:13px;
+  border:1px solid rgba(255,255,255,.1);background:transparent;
+  color:var(--text-n);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .25s var(--ease-soft);font-family:inherit;
+  position:relative;
+}
+.tbtn:hover{background:rgba(255,255,255,.12);transform:translateY(-2px);}
+.tbtn.active{background:rgba(255,255,255,.16);}
+.toolbar.light .tbtn{color:var(--text-d);border-color:rgba(20,30,50,.08);}
+.toolbar.light .tbtn:hover{background:rgba(20,30,50,.06);}
+
+.tbtn-label{
+  font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:300;
+  font-size:13px;color:var(--text-n-soft);padding:0 8px 0 4px;
+  letter-spacing:.02em;
+}
+.toolbar.light .tbtn-label{color:var(--text-d-soft);}
+
+/* ── Modals ──────────────────────────────────────────────── */
+.overlay{
+  position:fixed;inset:0;z-index:200;
+  display:flex;align-items:flex-start;justify-content:center;
+  padding:20px;padding-top:max(20px,env(safe-area-inset-top));
+  background:rgba(6,8,12,0.7);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  overflow-y:auto;-webkit-overflow-scrolling:touch;
+  animation:overlayIn .35s var(--ease-soft);
+}
+
+.modal{
+  background:rgba(18,22,32,0.92);
+  backdrop-filter:blur(28px) saturate(180%);
+  -webkit-backdrop-filter:blur(28px) saturate(180%);
+  border:1px solid rgba(255,255,255,0.12);
+  border-radius:22px;padding:22px;width:100%;max-width:440px;
+  display:flex;flex-direction:column;gap:16px;margin:auto 0;
+  box-shadow:
+    0 24px 64px rgba(0,0,0,.55),
+    0 1px 0 rgba(255,255,255,.14) inset,
+    0 -1px 0 rgba(0,0,0,.3) inset;
+  position:relative;
+  animation:modalIn .4s var(--ease-out-expo);
+}
+.modal::before{
+  content:'';position:absolute;top:0;left:10%;right:10%;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.25) 50%,transparent);
+  pointer-events:none;border-radius:22px 22px 0 0;
+}
+.modal.light{
+  background:rgba(252,250,245,0.92);border-color:rgba(255,255,255,.6);
+  box-shadow:
+    0 24px 64px rgba(40,50,70,.25),
+    0 1px 0 rgba(255,255,255,.8) inset;
+}
+.modal.light::before{background:linear-gradient(90deg,transparent,rgba(255,255,255,0.9) 50%,transparent);}
+
+.modal h3{
+  font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:300;
+  font-size:1.5rem;color:var(--text-n);letter-spacing:.01em;
+}
+.modal.light h3{color:var(--text-d);}
+
+.modal-close{
+  background:none;border:none;cursor:pointer;
+  color:var(--text-n-soft);width:28px;height:28px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .2s var(--ease-soft);
+}
+.modal-close:hover{background:rgba(255,255,255,.08);color:var(--text-n);}
+.modal.light .modal-close{color:var(--text-d-soft);}
+.modal.light .modal-close:hover{background:rgba(20,30,50,.06);color:var(--text-d);}
+
+.minput{
+  width:100%;padding:12px 16px;border-radius:13px;font-size:16px;outline:none;
+  border:1px solid rgba(255,255,255,.1);
+  background:rgba(0,0,0,0.25);
+  color:var(--text-n);font-family:inherit;-webkit-appearance:none;
+  transition:border-color .2s var(--ease-soft),background .2s var(--ease-soft);
+}
+.minput:focus{border-color:rgba(255,255,255,.25);background:rgba(0,0,0,0.35);}
+.minput.light{background:rgba(255,255,255,.55);border-color:rgba(20,30,50,.1);color:var(--text-d);}
+.minput.light:focus{border-color:rgba(20,30,50,.25);background:rgba(255,255,255,.75);}
+
 .mrow{display:flex;gap:8px;}
-.mbtn{flex:1;padding:11px;border-radius:12px;font-size:13px;cursor:pointer;border:1px solid rgba(255,255,255,.15);background:transparent;color:#e4e4e4;font-family:inherit;font-weight:500;transition:opacity .2s;}
-.mbtn.primary{background:#e4e4e4;color:#0a0a0a;border-color:#e4e4e4;}
-.mbtn.light{color:#1a1a1a;border-color:rgba(0,0,0,.15);}
-.mbtn.primary.light{background:#1a1a1a;color:#fff;}
-.mbtn:hover{opacity:.85;}
+
+.mbtn{
+  flex:1;padding:12px;border-radius:13px;font-size:13px;cursor:pointer;
+  border:1px solid rgba(255,255,255,.14);background:transparent;
+  color:var(--text-n);font-family:inherit;font-weight:500;letter-spacing:.01em;
+  transition:all .25s var(--ease-soft);
+}
+.mbtn:hover:not(:disabled){background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.22);}
+.mbtn.primary{
+  background:linear-gradient(180deg,#f4f4f6,#dcdce0);color:#0a0a0a;border-color:transparent;
+  box-shadow:0 1px 0 rgba(255,255,255,.5) inset,0 4px 12px rgba(0,0,0,.3);
+}
+.mbtn.primary:hover:not(:disabled){background:linear-gradient(180deg,#fff,#e8e8ec);transform:translateY(-1px);}
+.mbtn:disabled{opacity:.4;cursor:default;}
+.mbtn.light{color:var(--text-d);border-color:rgba(20,30,50,.15);}
+.mbtn.light:hover:not(:disabled){background:rgba(20,30,50,.05);}
+.mbtn.primary.light{background:linear-gradient(180deg,#1a1a1a,#0a0a0a);color:#fff;}
+
+.mlabel{
+  font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:400;
+  font-size:13px;color:var(--text-n-soft);margin-bottom:8px;letter-spacing:.02em;
+}
+.modal.light .mlabel{color:var(--text-d-soft);}
+
 .font-row{display:flex;gap:6px;flex-wrap:wrap;}
-.fpill{padding:4px 10px;border-radius:16px;font-size:12px;cursor:pointer;border:1px solid rgba(255,255,255,.15);background:transparent;color:rgba(255,255,255,.7);transition:background .2s;}
-.fpill.active{background:rgba(255,255,255,.15);color:#fff;}
-.fpill.lactive{background:rgba(0,0,0,.1);color:#1a1a1a;border-color:rgba(0,0,0,.2);}
-.color-row{display:flex;gap:8px;}
-.cdot{width:22px;height:22px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:border-color .2s;}
+.fpill{
+  padding:5px 12px;border-radius:14px;font-size:12px;cursor:pointer;
+  border:1px solid rgba(255,255,255,.14);background:transparent;color:var(--text-n-soft);
+  transition:all .2s var(--ease-soft);
+}
+.fpill:hover{background:rgba(255,255,255,.06);}
+.fpill.active{background:rgba(255,255,255,.16);color:var(--text-n);border-color:rgba(255,255,255,.25);}
+.modal.light .fpill{color:var(--text-d-soft);border-color:rgba(20,30,50,.15);}
+.modal.light .fpill:hover{background:rgba(20,30,50,.05);}
+.modal.light .fpill.active{background:rgba(20,30,50,.1);color:var(--text-d);border-color:rgba(20,30,50,.25);}
 
-/* Draw toolbar */
+.color-row{display:flex;gap:10px;}
+.cdot{
+  width:26px;height:26px;border-radius:50%;cursor:pointer;
+  border:2px solid transparent;
+  box-shadow:0 0 0 1px rgba(0,0,0,.1) inset,0 2px 4px rgba(0,0,0,.15);
+  transition:transform .2s var(--ease-soft);
+}
+.cdot:hover{transform:scale(1.1);}
+.cdot.active{box-shadow:0 0 0 2px var(--text-n) inset,0 0 0 1px rgba(0,0,0,.1) inset,0 2px 4px rgba(0,0,0,.15);}
+.modal.light .cdot.active{box-shadow:0 0 0 2px var(--text-d) inset,0 0 0 1px rgba(0,0,0,.1) inset,0 2px 4px rgba(0,0,0,.15);}
+
+/* ── Draw toolbar ────────────────────────────────────────── */
 .dtoolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-.dtool{width:30px;height:30px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:transparent;color:rgba(255,255,255,.7);cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;}
-.dtool.active{background:rgba(255,255,255,.2);color:#fff;}
+.dtool{
+  width:32px;height:32px;border-radius:9px;
+  border:1px solid rgba(255,255,255,.14);background:transparent;
+  color:var(--text-n);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .2s var(--ease-soft);
+}
+.dtool:hover{background:rgba(255,255,255,.08);}
+.dtool.active{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.3);}
 
-/* Onboard */
-.onboard{height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
-.ocard{width:100%;max-width:320px;display:flex;flex-direction:column;gap:18px;text-align:center;}
-.otitle{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:300;font-size:2.2rem;color:#e4e4e4;}
-.osub{font-size:13px;color:rgba(255,255,255,.35);}
-.obtn{padding:13px;border-radius:14px;font-size:14px;cursor:pointer;border:1px solid rgba(255,255,255,.15);background:transparent;color:#e4e4e4;font-family:inherit;font-weight:500;transition:opacity .2s;text-align:center;}
-.obtn.primary{background:#e4e4e4;color:#0a0a0a;border-color:#e4e4e4;}
-.obtn:hover{opacity:.85;}
-.oinput{width:100%;padding:11px 14px;border-radius:12px;font-size:16px;outline:none;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:#e4e4e4;font-family:inherit;-webkit-appearance:none;}
-.olabel{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.3);text-align:left;margin-bottom:4px;display:block;}
-.oback{font-size:12px;background:none;border:none;cursor:pointer;color:rgba(255,255,255,.3);font-family:inherit;}
-.oerr{font-size:12px;color:#e08080;text-align:left;}
+/* ── Onboard ─────────────────────────────────────────────── */
+.onboard{
+  height:100vh;height:100dvh;
+  display:flex;align-items:center;justify-content:center;
+  padding:24px;position:relative;overflow:hidden;
+}
+.ocard{
+  width:100%;max-width:340px;display:flex;flex-direction:column;gap:22px;
+  text-align:center;position:relative;z-index:10;
+  padding:32px 28px;border-radius:24px;
+  background:rgba(14,18,28,0.6);
+  backdrop-filter:blur(28px) saturate(180%);
+  -webkit-backdrop-filter:blur(28px) saturate(180%);
+  border:1px solid rgba(255,255,255,.12);
+  box-shadow:
+    0 24px 64px rgba(0,0,0,.55),
+    0 1px 0 rgba(255,255,255,.14) inset;
+}
+.ocard::before{
+  content:'';position:absolute;top:0;left:10%;right:10%;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.25) 50%,transparent);
+  pointer-events:none;border-radius:24px 24px 0 0;
+}
 
-/* Invite url */
-.iurl{padding:10px 12px;border-radius:10px;font-size:11px;word-break:break-all;user-select:all;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:rgba(255,255,255,.7);line-height:1.6;}
+.ocard.light{background:rgba(252,250,245,0.78);border-color:rgba(255,255,255,.6);}
+.ocard.light::before{background:linear-gradient(90deg,transparent,rgba(255,255,255,0.9) 50%,transparent);}
 
-/* SVG bg */
-.bgsvg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
+.obrand{display:flex;flex-direction:column;align-items:center;gap:8px;}
+.obrand-mark{
+  width:48px;height:48px;display:flex;align-items:center;justify-content:center;
+  animation:breathe 5s ease-in-out infinite;
+}
+.otitle{
+  font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:300;
+  font-size:2.4rem;color:rgba(232,232,236,.95);letter-spacing:.005em;line-height:1;
+}
+.ocard.light .otitle{color:rgba(20,30,50,.9);}
+.osub{
+  font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:400;
+  font-size:14px;color:rgba(232,232,236,.5);letter-spacing:.04em;
+}
+.ocard.light .osub{color:rgba(20,30,50,.5);}
+
+.obtn{
+  padding:14px;border-radius:14px;font-size:14px;cursor:pointer;
+  border:1px solid rgba(255,255,255,.16);background:transparent;color:var(--text-n);
+  font-family:inherit;font-weight:500;letter-spacing:.01em;
+  transition:all .25s var(--ease-soft);text-align:center;
+}
+.obtn:hover{background:rgba(255,255,255,.06);transform:translateY(-1px);}
+.obtn.primary{
+  background:linear-gradient(180deg,#f4f4f6,#dcdce0);color:#0a0a0a;border-color:transparent;
+  box-shadow:0 1px 0 rgba(255,255,255,.5) inset,0 4px 14px rgba(0,0,0,.35);
+}
+.obtn.primary:hover{background:linear-gradient(180deg,#fff,#e8e8ec);}
+.ocard.light .obtn{color:var(--text-d);border-color:rgba(20,30,50,.15);}
+.ocard.light .obtn:hover{background:rgba(20,30,50,.05);}
+.ocard.light .obtn.primary{background:linear-gradient(180deg,#1a1a1a,#0a0a0a);color:#fff;}
+
+.oinput{
+  width:100%;padding:13px 16px;border-radius:13px;font-size:16px;outline:none;
+  border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);
+  color:var(--text-n);font-family:inherit;-webkit-appearance:none;
+  transition:all .2s var(--ease-soft);
+}
+.oinput:focus{border-color:rgba(255,255,255,.3);background:rgba(255,255,255,.08);}
+.ocard.light .oinput{background:rgba(255,255,255,.5);border-color:rgba(20,30,50,.12);color:var(--text-d);}
+.ocard.light .oinput:focus{background:rgba(255,255,255,.75);border-color:rgba(20,30,50,.3);}
+
+.olabel{
+  font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:400;
+  font-size:12px;color:rgba(232,232,236,.5);
+  text-align:left;margin-bottom:6px;display:block;letter-spacing:.04em;
+}
+.ocard.light .olabel{color:rgba(20,30,50,.5);}
+
+.oback{
+  font-size:12px;background:none;border:none;cursor:pointer;
+  color:rgba(232,232,236,.4);font-family:inherit;letter-spacing:.02em;
+  transition:color .2s var(--ease-soft);
+}
+.oback:hover{color:rgba(232,232,236,.7);}
+.ocard.light .oback{color:rgba(20,30,50,.4);}
+
+.oerr{
+  font-family:'Cormorant Garamond',serif;font-style:italic;
+  font-size:13px;color:#e88080;text-align:left;letter-spacing:.01em;
+}
+
+/* ── Invite URL ──────────────────────────────────────────── */
+.iurl{
+  padding:12px 14px;border-radius:11px;font-family:'DM Mono',monospace;
+  font-size:11px;word-break:break-all;user-select:all;letter-spacing:.02em;
+  border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.25);
+  color:rgba(232,232,236,.75);line-height:1.6;
+}
+
+/* ── Empty state ─────────────────────────────────────────── */
+.empty-state{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  pointer-events:none;
+}
+.empty-mark{
+  display:flex;flex-direction:column;align-items:center;gap:14px;
+}
+.empty-glyph{
+  width:42px;height:42px;opacity:.22;
+  animation:breathe 5s ease-in-out infinite;
+}
+.empty-text{
+  font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:300;
+  color:rgba(255,255,255,.42);font-size:1.05rem;letter-spacing:.02em;
+}
+.empty-text.light{color:rgba(20,30,50,.4);}
+
+/* ── Mobile tweaks ───────────────────────────────────────── */
+@media (max-width:520px){
+  .header{padding:12px 14px;padding-top:max(12px,env(safe-area-inset-top));}
+  .header-title{font-size:1.15rem;}
+  .hbtn{font-size:11px;padding:0 10px;height:32px;min-width:32px;}
+  .hbtn-group .hbtn{width:34px;height:32px;}
+  .daynav{top:max(56px,calc(env(safe-area-inset-top) + 56px));}
+  .daynav .day-label{font-size:13px;min-width:110px;}
+  .toolbar{padding:6px 8px;border-radius:16px;gap:4px;}
+  .tbtn{width:40px;height:40px;border-radius:12px;}
+  .tbtn-label{font-size:12px;padding:0 6px 0 2px;}
+  .board-content{top:108px;bottom:96px;}
+  .modal{padding:18px;border-radius:18px;}
+  .ocard{padding:28px 22px;}
+  .otitle{font-size:2rem;}
+}
 </style>
 </head>
 <body>
@@ -142,7 +645,8 @@ const getIsDark=()=>{const h=new Date().getHours();return h<7||h>=18;};
 const todayStr=()=>new Date().toISOString().split('T')[0];
 const fmtDate=d=>{const o=new Date(d+'T12:00:00');return o.toLocaleDateString('es',{weekday:'short',day:'numeric',month:'short'});};
 const randRot=()=>+(((Math.random()-.5)*5).toFixed(2));
-const centerPos=(W,H)=>({x:Math.round(W/2-100+Math.random()*60-30),y:Math.round(H/2-80+Math.random()*60-30)});const FONTS=[
+
+const FONTS=[
   {id:'space',label:'Space',css:"'Space Grotesk',sans-serif"},
   {id:'playfair',label:'Playfair',css:"'Playfair Display',serif"},
   {id:'lora',label:'Lora',css:"'Lora',serif"},
@@ -156,6 +660,33 @@ const PCOLORS=[
   {id:'sky',v:'#e4eef8'},{id:'sand',v:'#f5ecd8'},{id:'lavender',v:'#ede8f5'},
 ];
 
+// ═══════════════════════════════════════════════════════════
+// Iconos SVG custom — stroke fino, lenguaje unificado
+// ═══════════════════════════════════════════════════════════
+const Icon={
+  Plus:({className='icon'})=>(<svg className={className} viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" strokeLinecap="round"/></svg>),
+  X:({className='icon'})=>(<svg className={className} viewBox="0 0 24 24"><path d="M6 6l12 12M6 18l12-12" strokeLinecap="round"/></svg>),
+  ChevronLeft:({className='icon'})=>(<svg className={className} viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6" strokeLinecap="round" strokeLinejoin="round"/></svg>),
+  ChevronRight:({className='icon'})=>(<svg className={className} viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round"/></svg>),
+  Sun:({className='icon'})=>(<svg className={className} viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" strokeLinecap="round"/></svg>),
+  Moon:({className='icon'})=>(<svg className={className} viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" strokeLinecap="round" strokeLinejoin="round"/></svg>),
+  Maximize:({className='icon'})=>(<svg className={className} viewBox="0 0 24 24"><path d="M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4" strokeLinecap="round" strokeLinejoin="round"/></svg>),
+  Minimize:({className='icon'})=>(<svg className={className} viewBox="0 0 24 24"><path d="M8 4v4H4M16 4v4h4M16 20v-4h4M8 20v-4H4" strokeLinecap="round" strokeLinejoin="round"/></svg>),
+  Share:({className='icon'})=>(<svg className={className} viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13" strokeLinecap="round" strokeLinejoin="round"/></svg>),
+  Note:({className='icon'})=>(<svg className={className} viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z M14 3v6h6 M9 13h6 M9 17h4" strokeLinecap="round" strokeLinejoin="round"/></svg>),
+  Pencil:({className='icon'})=>(<svg className={className} viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z M14 6l4 4" strokeLinecap="round" strokeLinejoin="round"/></svg>),
+  Camera:({className='icon'})=>(<svg className={className} viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z M12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" strokeLinecap="round" strokeLinejoin="round"/></svg>),
+  Eraser:({className='icon'})=>(<svg className={className} viewBox="0 0 24 24"><path d="M20 20H7L3 16a2 2 0 0 1 0-3l9-9a2 2 0 0 1 3 0l6 6a2 2 0 0 1 0 3l-7 7M14 6l4 4M9 11l4 4" strokeLinecap="round" strokeLinejoin="round"/></svg>),
+  Spray:({className='icon'})=>(<svg className={className} viewBox="0 0 24 24"><circle cx="9" cy="9" r="0.8" fill="currentColor"/><circle cx="15" cy="11" r="0.8" fill="currentColor"/><circle cx="11" cy="14" r="0.8" fill="currentColor"/><circle cx="14" cy="6" r="0.8" fill="currentColor"/><circle cx="7" cy="14" r="0.8" fill="currentColor"/><circle cx="18" cy="15" r="0.8" fill="currentColor"/><circle cx="12" cy="10" r="0.6" fill="currentColor"/></svg>),
+  Line:({className='icon'})=>(<svg className={className} viewBox="0 0 24 24"><path d="M5 19L19 5" strokeLinecap="round"/></svg>),
+  Rect:({className='icon'})=>(<svg className={className} viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="1"/></svg>),
+  Circle:({className='icon'})=>(<svg className={className} viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/></svg>),
+  Logo:({className='icon-lg'})=>(<svg className={className} viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="14" stroke="currentColor" strokeWidth="0.6" opacity="0.3"/><path d="M22 14a6 6 0 1 1-6.5-5.97A4.5 4.5 0 0 0 22 14z" fill="currentColor" opacity="0.85"/><circle cx="9" cy="10" r="0.5" fill="currentColor" opacity="0.6"/><circle cx="24" cy="22" r="0.5" fill="currentColor" opacity="0.5"/><circle cx="11" cy="22" r="0.4" fill="currentColor" opacity="0.4"/></svg>),
+};
+
+// ═══════════════════════════════════════════════════════════
+// Y2K filter
+// ═══════════════════════════════════════════════════════════
 const applyY2K=(canvas,src)=>new Promise(res=>{
   const img=new Image();
   img.onload=()=>{
@@ -180,72 +711,232 @@ const applyY2K=(canvas,src)=>new Promise(res=>{
   img.src=src;
 });
 
-// ── Outdoor Background ───────────────────────────────────
-function OutdoorBg({isDark}){
+// ═══════════════════════════════════════════════════════════
+// Outdoor Background — atmósfera viva con parallax y niebla
+// ═══════════════════════════════════════════════════════════
+function OutdoorBg({isDark,parallax}){
+  // parallax: {x: -1 to 1, y: -1 to 1}
+  const px=parallax?.x||0, py=parallax?.y||0;
+
   return(
-    <svg className="bgsvg" preserveAspectRatio="xMidYMid slice" viewBox="0 0 1200 800">
+    <>
+    <svg
+      className="bgsvg"
+      preserveAspectRatio="xMidYMid slice"
+      viewBox="0 0 1200 800"
+      style={{transform:`translate(${px*-12}px, ${py*-8}px) scale(1.04)`}}
+    >
       <defs>
+        {/* Cielo más rico, multi-stop */}
         <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-          {isDark?<><stop offset="0%" stopColor="#06090f"/><stop offset="60%" stopColor="#0d1825"/><stop offset="100%" stopColor="#142030"/></>
-                 :<><stop offset="0%" stopColor="#8dc8e8"/><stop offset="60%" stopColor="#b8dff0"/><stop offset="100%" stopColor="#d8eef7"/></>}
+          {isDark?<>
+            <stop offset="0%" stopColor="#03050a"/>
+            <stop offset="30%" stopColor="#080d1a"/>
+            <stop offset="60%" stopColor="#0d1828"/>
+            <stop offset="85%" stopColor="#162234"/>
+            <stop offset="100%" stopColor="#1a2840"/>
+          </>:<>
+            <stop offset="0%" stopColor="#7ab8d8"/>
+            <stop offset="35%" stopColor="#a3d2e8"/>
+            <stop offset="65%" stopColor="#cae5f0"/>
+            <stop offset="100%" stopColor="#e2eef5"/>
+          </>}
         </linearGradient>
+
+        {/* Tinte cálido del horizonte */}
+        <linearGradient id="horizon" x1="0" y1="0" x2="0" y2="1">
+          {isDark?<>
+            <stop offset="0%" stopColor="#1a2545" stopOpacity="0"/>
+            <stop offset="100%" stopColor="#3d2a4a" stopOpacity="0.35"/>
+          </>:<>
+            <stop offset="0%" stopColor="#f4d9a8" stopOpacity="0"/>
+            <stop offset="100%" stopColor="#f9c896" stopOpacity="0.45"/>
+          </>}
+        </linearGradient>
+
         <linearGradient id="mtn1" x1="0" y1="0" x2="0" y2="1">
-          {isDark?<><stop offset="0%" stopColor="#1a2a40"/><stop offset="100%" stopColor="#0a121e"/></>
-                 :<><stop offset="0%" stopColor="#4a7055"/><stop offset="100%" stopColor="#2e5038"/></>}
+          {isDark?<><stop offset="0%" stopColor="#1c2c44"/><stop offset="100%" stopColor="#0a141e"/></>
+                 :<><stop offset="0%" stopColor="#4a7058"/><stop offset="100%" stopColor="#2d4f38"/></>}
         </linearGradient>
         <linearGradient id="mtn2" x1="0" y1="0" x2="0" y2="1">
-          {isDark?<><stop offset="0%" stopColor="#111e30"/><stop offset="100%" stopColor="#070d18"/></>
+          {isDark?<><stop offset="0%" stopColor="#13202f"/><stop offset="100%" stopColor="#080d18"/></>
                  :<><stop offset="0%" stopColor="#6a9070"/><stop offset="100%" stopColor="#4a7055"/></>}
         </linearGradient>
+        <linearGradient id="mtn3" x1="0" y1="0" x2="0" y2="1">
+          {isDark?<><stop offset="0%" stopColor="#0a1422"/><stop offset="100%" stopColor="#050a14"/></>
+                 :<><stop offset="0%" stopColor="#85a98c"/><stop offset="100%" stopColor="#65876e"/></>}
+        </linearGradient>
+
+        {/* Halo del sol/luna */}
+        <radialGradient id="orb-halo">
+          {isDark?<>
+            <stop offset="0%" stopColor="#f8f4e0" stopOpacity="0.85"/>
+            <stop offset="40%" stopColor="#d4c87a" stopOpacity="0.25"/>
+            <stop offset="100%" stopColor="#d4c87a" stopOpacity="0"/>
+          </>:<>
+            <stop offset="0%" stopColor="#fff8c0" stopOpacity="0.95"/>
+            <stop offset="35%" stopColor="#ffe898" stopOpacity="0.4"/>
+            <stop offset="100%" stopColor="#ffd870" stopOpacity="0"/>
+          </>}
+        </radialGradient>
+
         <filter id="blur1"><feGaussianBlur stdDeviation="1.5"/></filter>
+        <filter id="blur-soft"><feGaussianBlur stdDeviation="3"/></filter>
+        <filter id="glow"><feGaussianBlur stdDeviation="6"/></filter>
+
+        {/* Aurora muy sutil para noche */}
+        <linearGradient id="aurora" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#3d6a8a" stopOpacity="0"/>
+          <stop offset="40%" stopColor="#5a8aa8" stopOpacity="0.18"/>
+          <stop offset="60%" stopColor="#6a5a9a" stopOpacity="0.22"/>
+          <stop offset="100%" stopColor="#3d6a8a" stopOpacity="0"/>
+        </linearGradient>
       </defs>
+
+      {/* Cielo base */}
       <rect width="1200" height="800" fill="url(#sky)"/>
-      {/* Stars */}
-      {isDark&&Array.from({length:80}).map((_,i)=>(
-        <circle key={i} cx={(i*137+50)%1200} cy={(i*73)%420} r={Math.random()*.9+.2} fill="white" opacity={Math.random()*.7+.15}/>
-      ))}
-      {/* Moon or sun */}
-      {isDark
-        ?<circle cx="900" cy="90" r="28" fill="#d4c87a" opacity=".9" filter="url(#blur1)"/>
-        :<circle cx="950" cy="80" r="40" fill="#fff8c0" opacity=".95" filter="url(#blur1)"/>
-      }
-      {/* Far mountains */}
-      <polygon points="0,800 0,520 120,420 250,490 380,390 520,460 660,360 800,440 940,350 1080,430 1200,370 1200,800" fill={isDark?'#0c1828':'#5a8065'} opacity=".6"/>
-      {/* Main mountains */}
-      <polygon points="0,800 0,560 100,490 220,540 360,450 500,520 640,420 760,500 900,400 1040,490 1200,440 1200,800" fill="url(#mtn2)"/>
-      <polygon points="0,800 0,640 80,590 180,620 300,560 440,610 580,540 720,600 860,530 1000,590 1200,550 1200,800" fill="url(#mtn1)"/>
-      {/* Snow caps */}
-      {[[360,450],[640,420],[900,400],[220,540],[580,540]].map(([x,y],i)=>(
-        <polygon key={i} points={`${x},${y} ${x-18},${y+30} ${x+18},${y+30}`} fill={isDark?'#7090a8':'#ffffff'} opacity={isDark?.7:.9}/>
-      ))}
-      {/* Trees */}
-      {Array.from({length:30}).map((_,i)=>{
-        const x=(i*43+10)%1200,y=680+(i%5)*18;
-        return <polygon key={i} points={`${x},${y} ${x-8},${y+24} ${x+8},${y+24}`} fill={isDark?'#060c12':'#1a3d22'}/>;
+
+      {/* Tinte cálido del horizonte */}
+      <rect x="0" y="380" width="1200" height="280" fill="url(#horizon)"/>
+
+      {/* Aurora sutil de noche */}
+      {isDark&&(
+        <ellipse cx="600" cy="200" rx="700" ry="80" fill="url(#aurora)" filter="url(#blur-soft)" opacity="0.6">
+          <animate attributeName="cx" values="500;700;500" dur="40s" repeatCount="indefinite"/>
+        </ellipse>
+      )}
+
+      {/* Estrellas — capa lejana, mucha cantidad, opacidad baja */}
+      {isDark&&Array.from({length:120}).map((_,i)=>{
+        const x=(i*97+30)%1200;
+        const y=(i*53)%420;
+        const r=Math.random()*0.6+0.15;
+        return <circle key={'s1-'+i} cx={x} cy={y} r={r} fill="#e8e4f0" opacity={Math.random()*0.5+0.15}/>;
       })}
-      {/* Snow falling */}
-      {isDark&&Array.from({length:25}).map((_,i)=>(
-        <circle key={i} cx={(i*91+20)%1200} cy="0" r="1.5" fill="white" opacity=".6">
-          <animate attributeName="cy" from="-10" to="810" dur={`${7+(i%6)}s`} repeatCount="indefinite" begin={`${i*.4}s`}/>
-          <animate attributeName="cx" values={`${(i*91+20)%1200};${(i*91+20)%1200+20};${(i*91+20)%1200}`} dur={`${7+(i%6)}s`} repeatCount="indefinite" begin={`${i*.4}s`}/>
+      {/* Estrellas — capa media con titilar */}
+      {isDark&&Array.from({length:35}).map((_,i)=>{
+        const x=(i*137+70)%1200;
+        const y=(i*73+20)%380;
+        const r=Math.random()*0.8+0.4;
+        const dur=2+(i%4);
+        return (
+          <circle key={'s2-'+i} cx={x} cy={y} r={r} fill="#fffcf0">
+            <animate attributeName="opacity" values="0.3;1;0.3" dur={dur+'s'} repeatCount="indefinite" begin={`${i*0.3}s`}/>
+          </circle>
+        );
+      })}
+      {/* Estrellas brillantes con halo */}
+      {isDark&&[[180,80],[420,140],[760,90],[1020,160],[280,210]].map(([x,y],i)=>(
+        <g key={'s3-'+i}>
+          <circle cx={x} cy={y} r="3" fill="#fff8e8" opacity="0.5" filter="url(#glow)"/>
+          <circle cx={x} cy={y} r="0.9" fill="#ffffff">
+            <animate attributeName="opacity" values="0.5;1;0.5" dur="3s" repeatCount="indefinite" begin={`${i*0.6}s`}/>
+          </circle>
+        </g>
+      ))}
+
+      {/* Sol o Luna con halo radial */}
+      {isDark?(
+        <g style={{transform:`translate(${px*-25}px, ${py*-15}px)`}}>
+          <circle cx="900" cy="100" r="120" fill="url(#orb-halo)"/>
+          <circle cx="900" cy="100" r="32" fill="#f0e8c8" opacity="0.92"/>
+          <circle cx="894" cy="96" r="3" fill="#c8c0a0" opacity="0.4"/>
+          <circle cx="908" cy="105" r="4" fill="#c8c0a0" opacity="0.35"/>
+          <circle cx="897" cy="108" r="2" fill="#c8c0a0" opacity="0.3"/>
+        </g>
+      ):(
+        <g style={{transform:`translate(${px*-25}px, ${py*-15}px)`}}>
+          <circle cx="950" cy="110" r="140" fill="url(#orb-halo)"/>
+          <circle cx="950" cy="110" r="44" fill="#fff9d8" opacity="0.96"/>
+          <circle cx="950" cy="110" r="38" fill="#fffce8" opacity="0.6"/>
+        </g>
+      )}
+
+      {/* Montañas lejanas — más profundidad */}
+      <polygon
+        points="0,800 0,500 100,420 220,470 360,380 500,440 640,360 780,420 920,360 1060,410 1200,370 1200,800"
+        fill="url(#mtn3)"
+        opacity={isDark?0.55:0.65}
+        style={{transform:`translateX(${px*4}px)`}}
+      />
+      {/* Capa media */}
+      <polygon
+        points="0,800 0,560 100,490 220,540 360,450 500,520 640,420 760,500 900,400 1040,490 1200,440 1200,800"
+        fill="url(#mtn2)"
+        style={{transform:`translateX(${px*7}px)`}}
+      />
+      {/* Capa cercana */}
+      <polygon
+        points="0,800 0,640 80,590 180,620 300,560 440,610 580,540 720,600 860,530 1000,590 1200,550 1200,800"
+        fill="url(#mtn1)"
+        style={{transform:`translateX(${px*11}px)`}}
+      />
+
+      {/* Cumbres nevadas */}
+      {[[360,450],[640,420],[900,400],[220,540],[580,540]].map(([x,y],i)=>(
+        <polygon key={'snow-'+i} points={`${x},${y} ${x-18},${y+30} ${x+18},${y+30}`} fill={isDark?'#7090a8':'#ffffff'} opacity={isDark?.7:.92} style={{transform:`translateX(${px*8}px)`}}/>
+      ))}
+
+      {/* Árboles — capa cercana */}
+      {Array.from({length:32}).map((_,i)=>{
+        const x=(i*39+8)%1200,y=680+(i%5)*16;
+        return <polygon key={'tree-'+i} points={`${x},${y} ${x-7},${y+22} ${x+7},${y+22}`} fill={isDark?'#060c12':'#1a3d22'} style={{transform:`translateX(${px*13}px)`}}/>;
+      })}
+
+      {/* Nieve cayendo — solo de noche */}
+      {isDark&&Array.from({length:32}).map((_,i)=>(
+        <circle key={'snowflake-'+i} cx={(i*73+15)%1200} cy="0" r={Math.random()*0.7+0.7} fill="white" opacity={Math.random()*0.4+0.4}>
+          <animate attributeName="cy" from="-10" to="810" dur={`${8+(i%6)}s`} repeatCount="indefinite" begin={`${i*.35}s`}/>
+          <animate attributeName="cx" values={`${(i*73+15)%1200};${(i*73+15)%1200+25};${(i*73+15)%1200}`} dur={`${8+(i%6)}s`} repeatCount="indefinite" begin={`${i*.35}s`}/>
         </circle>
       ))}
     </svg>
+
+    {/* Capas de niebla animada — overlay */}
+    <div className={"bg-fog"+(isDark?" dark":"")} style={{transform:`translate(${px*-4}px, 0)`}}>
+      <svg width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 1200 800">
+        <defs>
+          <linearGradient id="fog1" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={isDark?"#3a4a5a":"#ffffff"} stopOpacity="0"/>
+            <stop offset="50%" stopColor={isDark?"#3a4a5a":"#ffffff"} stopOpacity="0.4"/>
+            <stop offset="100%" stopColor={isDark?"#3a4a5a":"#ffffff"} stopOpacity="0"/>
+          </linearGradient>
+          <linearGradient id="fog2" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={isDark?"#4a5a70":"#fafaf2"} stopOpacity="0"/>
+            <stop offset="50%" stopColor={isDark?"#4a5a70":"#fafaf2"} stopOpacity="0.3"/>
+            <stop offset="100%" stopColor={isDark?"#4a5a70":"#fafaf2"} stopOpacity="0"/>
+          </linearGradient>
+          <filter id="fogBlur"><feGaussianBlur stdDeviation="20"/></filter>
+        </defs>
+        <ellipse cx="300" cy="540" rx="400" ry="50" fill="url(#fog1)" filter="url(#fogBlur)">
+          <animate attributeName="cx" values="200;500;200" dur="55s" repeatCount="indefinite"/>
+        </ellipse>
+        <ellipse cx="900" cy="500" rx="350" ry="45" fill="url(#fog2)" filter="url(#fogBlur)">
+          <animate attributeName="cx" values="1000;700;1000" dur="65s" repeatCount="indefinite"/>
+        </ellipse>
+        <ellipse cx="600" cy="580" rx="500" ry="40" fill="url(#fog1)" filter="url(#fogBlur)" opacity="0.5">
+          <animate attributeName="cx" values="400;800;400" dur="75s" repeatCount="indefinite"/>
+        </ellipse>
+      </svg>
+    </div>
+    </>
   );
 }
 
-// ── Draw Sheet Modal ─────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+// Draw Sheet Modal
+// ═══════════════════════════════════════════════════════════
 function DrawModal({onSave,onCancel,isDark}){
   const ref=useRef(null);
   const [tool,setTool]=useState('pen');
-  const [color,setColor]=useState(isDark?'#e4e4e4':'#1a1a1a');
+  const [color,setColor]=useState(isDark?'#e8e8ec':'#1a1a1a');
   const [sz,setSz]=useState(3);
   const drawing=useRef(false);
   const last=useRef(null);
 
   useEffect(()=>{
     const c=ref.current,ctx=c.getContext('2d');
-    ctx.fillStyle=isDark?'#1a1a1a':'#fefefe';
+    ctx.fillStyle=isDark?'#1a1c20':'#fafaf6';
     ctx.fillRect(0,0,c.width,c.height);
   },[]);
 
@@ -264,7 +955,7 @@ function DrawModal({onSave,onCancel,isDark}){
     const c=ref.current,ctx=c.getContext('2d'),p=getPos(e,c);
     if(tool==='pen'||tool==='eraser'){
       ctx.beginPath();ctx.moveTo(last.current.x,last.current.y);ctx.lineTo(p.x,p.y);
-      ctx.strokeStyle=tool==='eraser'?(isDark?'#1a1a1a':'#fefefe'):color;
+      ctx.strokeStyle=tool==='eraser'?(isDark?'#1a1c20':'#fafaf6'):color;
       ctx.lineWidth=tool==='eraser'?sz*4:sz;ctx.lineCap='round';ctx.lineJoin='round';ctx.stroke();last.current=p;
     }else if(tool==='spray'){spray(ctx,p);last.current=p;}
   };
@@ -277,29 +968,38 @@ function DrawModal({onSave,onCancel,isDark}){
     drawing.current=false;
   };
 
-  const TOOLS=[{id:'pen',icon:'✏️'},{id:'eraser',icon:'◻'},{id:'spray',icon:'∷'},{id:'line',icon:'╱'},{id:'rect',icon:'▭'},{id:'circle',icon:'○'}];
+  const TOOLS=[
+    {id:'pen',I:Icon.Pencil},
+    {id:'eraser',I:Icon.Eraser},
+    {id:'spray',I:Icon.Spray},
+    {id:'line',I:Icon.Line},
+    {id:'rect',I:Icon.Rect},
+    {id:'circle',I:Icon.Circle},
+  ];
 
   return(
     <div className="overlay">
-      <div className="modal" style={{maxWidth:520}}>
+      <div className="modal" style={{maxWidth:540}}>
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-          <h3 style={{color:'#e4e4e4'}}>Nueva hoja</h3>
-          <button onClick={onCancel} style={{background:'none',border:'none',cursor:'pointer',color:'rgba(255,255,255,.4)',fontSize:18}}>✕</button>
+          <h3>Nueva hoja</h3>
+          <button className="modal-close" onClick={onCancel}><Icon.X/></button>
         </div>
         <div className="dtoolbar">
           <div style={{display:'flex',gap:4}}>
-            {TOOLS.map(({id,icon})=>(
-              <button key={id} className={`dtool${tool===id?' active':''}`} onClick={()=>setTool(id)}>{icon}</button>
+            {TOOLS.map(({id,I})=>(
+              <button key={id} className={`dtool${tool===id?' active':''}`} onClick={()=>setTool(id)}>
+                <I className="icon"/>
+              </button>
             ))}
           </div>
-          <input type="color" value={color} onChange={e=>setColor(e.target.value)} style={{width:28,height:28,borderRadius:'50%'}}/>
-          <div style={{display:'flex',alignItems:'center',gap:8,flex:1}}>
-            <span style={{fontSize:11,color:'rgba(255,255,255,.3)',whiteSpace:'nowrap'}}>grosor</span>
-            <input type="range" min="1" max="18" value={sz} onChange={e=>setSz(+e.target.value)} style={{flex:1,accentColor:'#e4e4e4'}}/>
+          <input type="color" value={color} onChange={e=>setColor(e.target.value)}/>
+          <div style={{display:'flex',alignItems:'center',gap:10,flex:1}}>
+            <span style={{fontFamily:"'Cormorant Garamond',serif",fontStyle:'italic',fontSize:13,color:'rgba(255,255,255,.5)',whiteSpace:'nowrap'}}>grosor</span>
+            <input type="range" min="1" max="18" value={sz} onChange={e=>setSz(+e.target.value)} style={{flex:1}}/>
           </div>
         </div>
         <canvas ref={ref} width={480} height={300}
-          style={{width:'100%',borderRadius:8,border:'1px solid rgba(255,255,255,.08)',cursor:tool==='eraser'?'cell':'crosshair',touchAction:'none',display:'block'}}
+          style={{width:'100%',borderRadius:10,border:'1px solid rgba(255,255,255,.08)',cursor:tool==='eraser'?'cell':'crosshair',touchAction:'none',display:'block',boxShadow:'inset 0 1px 2px rgba(0,0,0,0.3)'}}
           onMouseDown={onDown} onMouseMove={onMove} onMouseUp={onUp} onMouseLeave={onUp}
           onTouchStart={onDown} onTouchMove={onMove} onTouchEnd={onUp}/>
         <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
@@ -310,14 +1010,16 @@ function DrawModal({onSave,onCancel,isDark}){
             tmp.width=400;tmp.height=Math.round(400*(c.height/c.width));
             tmp.getContext('2d').drawImage(c,0,0,tmp.width,tmp.height);
             onSave(tmp.toDataURL('image/jpeg',0.78));
-          }}>Poner en tablón ✦</button>
+          }}>Poner en tablón</button>
         </div>
       </div>
     </div>
   );
 }
 
-// ── Postit Modal ─────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+// Postit Modal
+// ═══════════════════════════════════════════════════════════
 function PostitModal({onSave,onCancel,isDark}){
   const [text,setText]=useState('');
   const [font,setFont]=useState('caveat');
@@ -328,54 +1030,54 @@ function PostitModal({onSave,onCancel,isDark}){
     <div className="overlay">
       <div className={`modal${light?' light':''}`}>
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-          <h3 style={{color:light?'#1a1a1a':'#e4e4e4'}}>Nuevo post-it</h3>
-          <button onClick={onCancel} style={{background:'none',border:'none',cursor:'pointer',color:light?'rgba(0,0,0,.3)':'rgba(255,255,255,.4)',fontSize:18}}>✕</button>
+          <h3>Nuevo post-it</h3>
+          <button className="modal-close" onClick={onCancel}><Icon.X/></button>
         </div>
         <textarea value={text} onChange={e=>setText(e.target.value)} placeholder="escribe aquí..." rows={4} autoFocus
           className={`minput${light?' light':''}`}
-          style={{fontFamily:FONTS.find(f=>f.id===font)?.css,fontSize:font==='caveat'?'1.1rem':'14px',resize:'none',lineHeight:1.6}}/>
+          style={{fontFamily:FONTS.find(f=>f.id===font)?.css,fontSize:font==='caveat'?'1.15rem':'14px',resize:'none',lineHeight:1.6}}/>
         <div>
-          <div style={{fontSize:10,letterSpacing:'.05em',textTransform:'uppercase',color:light?'rgba(0,0,0,.35)':'rgba(255,255,255,.3)',marginBottom:6}}>Fuente</div>
+          <div className="mlabel">Fuente</div>
           <div className="font-row">
             {FONTS.map(f=>(
-              <button key={f.id} className={`fpill${font===f.id?(light?' lactive':' active'):''}`}
-                style={{fontFamily:f.css,borderColor:light?'rgba(0,0,0,.15)':'rgba(255,255,255,.15)',color:light?'rgba(0,0,0,.6)':'rgba(255,255,255,.6)'}}
+              <button key={f.id} className={`fpill${font===f.id?' active':''}`}
+                style={{fontFamily:f.css}}
                 onClick={()=>setFont(f.id)}>{f.label}</button>
             ))}
           </div>
         </div>
         <div>
-          <div style={{fontSize:10,letterSpacing:'.05em',textTransform:'uppercase',color:light?'rgba(0,0,0,.35)':'rgba(255,255,255,.3)',marginBottom:6}}>Color</div>
+          <div className="mlabel">Color</div>
           <div className="color-row">
             {PCOLORS.map(c=>(
-              <button key={c.id} className="cdot" onClick={()=>setColor(c.id)}
-                style={{background:c.v,borderColor:color===c.id?'#888':'transparent',boxShadow:color===c.id?'0 0 0 1px #888':'none'}}/>
+              <button key={c.id} className={`cdot${color===c.id?' active':''}`} onClick={()=>setColor(c.id)}
+                style={{background:c.v}}/>
             ))}
           </div>
         </div>
         <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
           <button className={`mbtn${light?' light':''}`} onClick={onCancel}>Cancelar</button>
-          <button className={`mbtn primary${light?' light':''}`} disabled={!text.trim()} onClick={()=>text.trim()&&onSave({text,font,color})} style={{opacity:text.trim()?1:.4}}>Poner en tablón ✦</button>
+          <button className={`mbtn primary${light?' light':''}`} disabled={!text.trim()} onClick={()=>text.trim()&&onSave({text,font,color})}>Poner en tablón</button>
         </div>
       </div>
     </div>
   );
 }
 
-// ── Board Element ────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+// Board Element
+// ═══════════════════════════════════════════════════════════
 function BoardEl({el,myId,onMove,onDelete,onUpdateCaption,boardRef}){
   const elRef=useRef(null);
   const dragStart=useRef(null);
   const resizeStart=useRef(null);
   const isMe=el.author_id===myId;
 
-  // Convert stored % position to pixels for current board size
   const getBoardSize=()=>{
     const b=boardRef.current;
     return b?{w:b.offsetWidth,h:b.offsetHeight}:{w:800,h:600};
   };
   const{w:boardW,h:boardH}=getBoardSize();
-  // Stored x,y are in 0-1000 normalized space
   const pxX=Math.round((el.x/1000)*boardW);
   const pxY=Math.round((el.y/1000)*boardH);
 
@@ -388,7 +1090,6 @@ function BoardEl({el,myId,onMove,onDelete,onUpdateCaption,boardRef}){
     const move=ev=>{
       const m=ev.touches?ev.touches[0]:ev;
       const dx=m.clientX-dragStart.current.mx,dy=m.clientY-dragStart.current.my;
-      // Convert pixel delta to normalized 0-1000
       const ndx=Math.round((dx/dragStart.current.bw)*1000);
       const ndy=Math.round((dy/dragStart.current.bh)*1000);
       onMove(el.id,Math.max(0,Math.min(1000,dragStart.current.ex+ndx)),Math.max(0,Math.min(1000,dragStart.current.ey+ndy)));
@@ -422,10 +1123,10 @@ function BoardEl({el,myId,onMove,onDelete,onUpdateCaption,boardRef}){
     return(
       <div ref={elRef} className="board-el el-in" style={style}
         onMouseDown={startDrag} onTouchStart={startDrag}>
-        <button className="del-btn" onClick={()=>onDelete(el.id)}>✕</button>
+        <button className="del-btn" onClick={()=>onDelete(el.id)}><Icon.X className="icon-sm"/></button>
         <div className="postit" style={{background:nc.v,fontFamily:font.css}}>
-          <div className="postit-author">{el.author_name}</div>
-          <div className="postit-text" style={{fontSize:el.font==='caveat'?'1.1rem':'13px',fontStyle:['cormorant','lora'].includes(el.font)?'italic':'normal'}}>
+          <div className="postit-author">— {el.author_name}</div>
+          <div className="postit-text" style={{fontSize:el.font==='caveat'?'1.15rem':'13.5px',fontStyle:['cormorant','lora'].includes(el.font)?'italic':'normal'}}>
             {el.content}
           </div>
           <div className="postit-time">{new Date(el.created_at).toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'})}</div>
@@ -439,24 +1140,24 @@ function BoardEl({el,myId,onMove,onDelete,onUpdateCaption,boardRef}){
     return(
       <div ref={elRef} className="board-el el-in" style={style}
         onMouseDown={startDrag} onTouchStart={startDrag}>
-        <button className="del-btn" onClick={()=>onDelete(el.id)}>✕</button>
+        <button className="del-btn" onClick={()=>onDelete(el.id)}><Icon.X className="icon-sm"/></button>
         <div className={`sketch${getIsDark()?' dark-sheet':''}`} style={{width:w,height:h}}>
-          <div className="sketch-author">{el.author_name}</div>
-          <img src={el.content} alt="" style={{width:'100%',height:'100%',objectFit:'contain',display:'block'}}/>
+          <div className="sketch-author">— {el.author_name}</div>
+          <img src={el.content} alt="" style={{objectFit:'contain'}}/>
           <div className="sketch-time">{new Date(el.created_at).toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'})}</div>
         </div>
         <div className="resize-handle" onMouseDown={startResize} onTouchStart={startResize}
-          style={{borderColor:'rgba(0,0,0,.3)'}}/>
+          style={{color:'rgba(0,0,0,.4)'}}/>
       </div>
     );
   }
 
   if(el.type==='polaroid'){
-    const w=el.w||180,imgH=Math.round(w*.85),footH=60;
+    const w=el.w||190,imgH=Math.round(w*.95),footH=58;
     return(
       <div ref={elRef} className="board-el el-in" style={style}
         onMouseDown={startDrag} onTouchStart={startDrag}>
-        <button className="del-btn" onClick={()=>onDelete(el.id)}>✕</button>
+        <button className="del-btn" onClick={()=>onDelete(el.id)}><Icon.X className="icon-sm"/></button>
         <div className="polaroid" style={{width:w}}>
           <div className="polaroid-img" style={{height:imgH}}>
             <img src={el.content} alt=""/>
@@ -469,25 +1170,38 @@ function BoardEl({el,myId,onMove,onDelete,onUpdateCaption,boardRef}){
           </div>
         </div>
         <div className="resize-handle" onMouseDown={startResize} onTouchStart={startResize}
-          style={{borderColor:'rgba(0,0,0,.2)'}}/>
+          style={{color:'rgba(0,0,0,.3)'}}/>
       </div>
     );
   }
   return null;
 }
 
-// ── Onboarding ───────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+// Onboarding
+// ═══════════════════════════════════════════════════════════
 function Onboarding({onDone}){
   const [step,setStep]=useState('choice');
   const [name,setName]=useState('');
   const [code,setCode]=useState('');
   const [loading,setLoading]=useState(false);
   const [err,setErr]=useState('');
+  const [parallax,setParallax]=useState({x:0,y:0});
 
   useEffect(()=>{
     const params=new URLSearchParams(window.location.search);
     const room=params.get('room');
     if(room){setCode(room);setStep('join');}
+  },[]);
+
+  useEffect(()=>{
+    const onMove=(e)=>{
+      const x=(e.clientX/window.innerWidth)*2-1;
+      const y=(e.clientY/window.innerHeight)*2-1;
+      setParallax({x,y});
+    };
+    window.addEventListener('mousemove',onMove);
+    return()=>window.removeEventListener('mousemove',onMove);
   },[]);
 
   const create=async()=>{
@@ -516,11 +1230,11 @@ function Onboarding({onDone}){
 
   const isDark=getIsDark();
   return(
-    <div className="onboard" style={{background:isDark?'#060910':'#e8f2f7',position:'relative',overflow:'hidden'}}>
-      <OutdoorBg isDark={isDark}/>
-      <div className="ocard" style={{position:'relative',zIndex:10}}>
-        <div>
-          <div style={{fontSize:'2.5rem',marginBottom:10}}>🌙</div>
+    <div className="onboard" style={{background:isDark?'#03050a':'#cae5f0'}}>
+      <OutdoorBg isDark={isDark} parallax={parallax}/>
+      <div className={`ocard${!isDark?' light':''}`}>
+        <div className="obrand">
+          <div className="obrand-mark"><Icon.Logo className="icon-lg" style={{color:isDark?'#e8e4f0':'#1a2840'}}/></div>
           <div className="otitle">MurmurTether</div>
           <div className="osub">un tablón para los dos</div>
         </div>
@@ -531,7 +1245,7 @@ function Onboarding({onDone}){
           </div>
         )}
         {(step==='create'||step==='join')&&(
-          <div style={{display:'flex',flexDirection:'column',gap:12}}>
+          <div style={{display:'flex',flexDirection:'column',gap:14}}>
             <div>
               <label className="olabel">Tu apodo</label>
               <input className="oinput" value={name} onChange={e=>setName(e.target.value)} placeholder="¿cómo te llaman acá?" autoFocus/>
@@ -554,7 +1268,9 @@ function Onboarding({onDone}){
   );
 }
 
-// ── Main App ─────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+// Main App
+// ═══════════════════════════════════════════════════════════
 function App(){
   const [session,setSession]=useState(null);
   const [elements,setElements]=useState([]);
@@ -567,6 +1283,7 @@ function App(){
   const [showInvite,setShowInvite]=useState(false);
   const [inviteUrl,setInviteUrl]=useState('');
   const [isFullscreen,setIsFullscreen]=useState(false);
+  const [parallax,setParallax]=useState({x:0,y:0});
   const boardRef=useRef(null);
   const fileRef=useRef(null);
   const filterCanvas=useRef(document.createElement('canvas'));
@@ -592,6 +1309,27 @@ function App(){
     return()=>{document.removeEventListener('fullscreenchange',onFs);document.removeEventListener('webkitfullscreenchange',onFs);};
   },[]);
 
+  // Parallax mouse tracking — solo desktop, throttled
+  useEffect(()=>{
+    let raf=null;
+    let target={x:0,y:0};
+    const onMove=(e)=>{
+      target.x=(e.clientX/window.innerWidth)*2-1;
+      target.y=(e.clientY/window.innerHeight)*2-1;
+      if(!raf){
+        raf=requestAnimationFrame(()=>{
+          setParallax({x:target.x,y:target.y});
+          raf=null;
+        });
+      }
+    };
+    // Solo enganchar en pantallas con hover (desktop)
+    if(window.matchMedia('(hover:hover)').matches){
+      window.addEventListener('mousemove',onMove);
+    }
+    return()=>{window.removeEventListener('mousemove',onMove);if(raf)cancelAnimationFrame(raf);};
+  },[]);
+
   useEffect(()=>{
     const i=setInterval(()=>setIsDark(getIsDark()),60000);
     return()=>clearInterval(i);
@@ -605,7 +1343,6 @@ function App(){
 
   useEffect(()=>{
     if(!session)return;
-    // Load elements for current day
     const loadElements=()=>{
       sb.from('murmur_notes')
         .select('*')
@@ -614,10 +1351,8 @@ function App(){
         .lte('created_at',currentDay+'T23:59:59')
         .then(({data})=>{
           if(data){
-            // Migrate any old pixel-based positions to normalized 0-1000 space
             const migrated=data.map(el=>{
               if(el.x>1000||el.y>1000){
-                // Old pixel coords, normalize assuming desktop ~1900x900
                 return{...el,x:Math.min(900,Math.round((el.x/1900)*1000)),y:Math.min(900,Math.round((el.y/900)*1000))};
               }
               return el;
@@ -628,7 +1363,6 @@ function App(){
         });
     };
     loadElements();
-    // Poll every 4 seconds as backup for realtime
     const pollInterval=setInterval(loadElements,4000);
 
     const ch=sb.channel('board_'+session.roomId+'_'+currentDay)
@@ -642,14 +1376,8 @@ function App(){
     return()=>{clearInterval(pollInterval);sb.removeChannel(ch);};
   },[session,currentDay]);
 
-  const getBoardCenter=()=>{
-    const b=boardRef.current;
-    if(!b)return{x:300,y:200};
-    return{x:Math.round(b.offsetWidth/2-100),y:Math.round(b.offsetHeight/2-80)};
-  };
   const addElement=async(data)=>{
     if(!session)return;
-    // Center in 0-1000 normalized space, with small random jitter
     const el={
       room_id:session.roomId,author_id:session.userId,author_name:session.userName,
       x:450+Math.round((Math.random()-.5)*100),y:400+Math.round((Math.random()-.5)*100),
@@ -679,7 +1407,7 @@ function App(){
     const r=new FileReader();
     r.onload=async ev=>{
       const filtered=await applyY2K(filterCanvas.current,ev.target.result);
-      await addElement({type:'polaroid',content:filtered,w:180,caption:''});
+      await addElement({type:'polaroid',content:filtered,w:190,caption:''});
     };
     r.readAsDataURL(file);e.target.value='';
   };
@@ -699,19 +1427,25 @@ function App(){
   if(!session)return <Onboarding onDone={s=>setSession(s)}/>;
 
   const isToday=currentDay===todayStr();
+  const lightCls=dark?'':' light';
 
   return(
-    <div className="board" style={{background:dark?'#060910':'#d8eef7'}}>
-      <OutdoorBg isDark={dark}/>
+    <div className="board" style={{background:dark?'#03050a':'#cae5f0'}}>
+      <OutdoorBg isDark={dark} parallax={parallax}/>
 
       {/* Invite modal */}
       {showInvite&&(
         <div className="overlay">
           <div className="modal">
-            <h3 style={{color:'#e4e4e4'}}>Compartí el tablón</h3>
-            <p style={{fontSize:13,color:'rgba(255,255,255,.4)'}}>Enviá este link. Solo hace falta abrirlo y elegir un apodo.</p>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+              <h3>Compartí el tablón</h3>
+              <button className="modal-close" onClick={()=>setShowInvite(false)}><Icon.X/></button>
+            </div>
+            <p style={{fontFamily:"'Cormorant Garamond',serif",fontStyle:'italic',fontSize:14,color:'rgba(232,232,236,.55)',letterSpacing:'.01em'}}>
+              Enviá este link. Solo hace falta abrirlo y elegir un apodo.
+            </p>
             <div className="iurl">{inviteUrl}</div>
-            <p style={{fontSize:11,color:'rgba(255,255,255,.3)',textAlign:'center'}}>copiado al portapapeles ✓</p>
+            <p style={{fontFamily:"'DM Mono',monospace",fontSize:10,color:'rgba(232,232,236,.4)',textAlign:'center',letterSpacing:'.05em'}}>copiado al portapapeles ✓</p>
             <button className="mbtn primary" onClick={()=>setShowInvite(false)}>listo</button>
           </div>
         </div>
@@ -725,37 +1459,38 @@ function App(){
 
       {/* Header */}
       <div className="header">
-        <span className="header-title">MurmurTether</span>
-        <div style={{display:'flex',gap:8,alignItems:'center'}}>
-          <button className="hbtn" onClick={toggleFullscreen} title="Pantalla completa">{isFullscreen?'⤢':'⛶'}</button>
-          <div style={{display:'flex',borderRadius:10,overflow:'hidden',border:'1px solid rgba(255,255,255,.2)'}}>
-            <button className={`hbtn${manual==='day'?' active':''}`} onClick={()=>setManual(manual==='day'?null:'day')} style={{borderRadius:0,border:'none'}}>☀</button>
-            <button className={`hbtn${manual==='night'?' active':''}`} onClick={()=>setManual(manual==='night'?null:'night')} style={{borderRadius:0,border:'none'}}>☽</button>
+        <span className={`header-title${lightCls}`}>MurmurTether</span>
+        <div className="header-actions">
+          <button className={`hbtn${lightCls}`} onClick={toggleFullscreen} title="Pantalla completa">
+            {isFullscreen?<Icon.Minimize/>:<Icon.Maximize/>}
+          </button>
+          <div className={`hbtn-group${lightCls}`}>
+            <button className={`hbtn${manual==='day'?' active':''}${lightCls}`} onClick={()=>setManual(manual==='day'?null:'day')} title="Día"><Icon.Sun/></button>
+            <button className={`hbtn${manual==='night'?' active':''}${lightCls}`} onClick={()=>setManual(manual==='night'?null:'night')} title="Noche"><Icon.Moon/></button>
           </div>
-          <button className="hbtn" onClick={getInvite}>+ invitar</button>
+          <button className={`hbtn${lightCls}`} onClick={getInvite}><Icon.Plus className="icon-sm"/>invitar</button>
         </div>
       </div>
 
       {/* Day navigator */}
-      <div className="daynav">
-        <button onClick={()=>changeDay(-1)}>‹</button>
-        <span>{currentDay===todayStr()?'hoy':fmtDate(currentDay)}</span>
-        <button onClick={()=>changeDay(1)} disabled={isToday} style={{opacity:isToday?.3:1}}>›</button>
+      <div className={`daynav${lightCls}`}>
+        <button onClick={()=>changeDay(-1)}><Icon.ChevronLeft className="icon-sm"/></button>
+        <span className="day-label">{currentDay===todayStr()?'hoy':fmtDate(currentDay)}</span>
+        <button onClick={()=>changeDay(1)} disabled={isToday}><Icon.ChevronRight className="icon-sm"/></button>
       </div>
 
-      {/* Board elements - contained in safe area */}
+      {/* Board elements */}
       <div className="board-content" ref={boardRef}>
         {elements.map(el=>(
           <BoardEl key={el.id} el={el} myId={session.userId}
             onMove={moveElement} onDelete={deleteElement} onUpdateCaption={updateCaption} boardRef={boardRef}/>
         ))}
 
-        {/* Empty state */}
         {elements.length===0&&ready&&(
-          <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',pointerEvents:'none'}}>
-            <div style={{textAlign:'center'}}>
-              <div style={{fontSize:'2.5rem',opacity:.2,marginBottom:8}}>🌙</div>
-              <p style={{fontFamily:"'Cormorant Garamond',serif",fontStyle:'italic',color:'rgba(255,255,255,.3)',fontSize:'1rem'}}>
+          <div className="empty-state">
+            <div className="empty-mark">
+              <Icon.Logo className="empty-glyph" style={{color:dark?'#e8e4f0':'#1a2840'}}/>
+              <p className={`empty-text${lightCls}`}>
                 {isToday?'el tablón te espera...':'sin recuerdos este día'}
               </p>
             </div>
@@ -764,11 +1499,11 @@ function App(){
       </div>
 
       {/* Toolbar */}
-      <div className="toolbar">
+      <div className={`toolbar${lightCls}`}>
         <span className="tbtn-label">añadir</span>
-        <button className="tbtn" title="Post-it" onClick={()=>setShowPostit(true)}>🗒</button>
-        <button className="tbtn" title="Dibujo" onClick={()=>setShowDraw(true)}>✏️</button>
-        <button className="tbtn" title="Foto polaroid" onClick={()=>fileRef.current?.click()}>📷</button>
+        <button className="tbtn" title="Post-it" onClick={()=>setShowPostit(true)}><Icon.Note/></button>
+        <button className="tbtn" title="Dibujo" onClick={()=>setShowDraw(true)}><Icon.Pencil/></button>
+        <button className="tbtn" title="Foto polaroid" onClick={()=>fileRef.current?.click()}><Icon.Camera/></button>
         <input ref={fileRef} type="file" accept="image/*" style={{display:'none'}} onChange={handlePhoto}/>
       </div>
     </div>
