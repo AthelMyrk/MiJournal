@@ -142,9 +142,7 @@ const getIsDark=()=>{const h=new Date().getHours();return h<7||h>=18;};
 const todayStr=()=>new Date().toISOString().split('T')[0];
 const fmtDate=d=>{const o=new Date(d+'T12:00:00');return o.toLocaleDateString('es',{weekday:'short',day:'numeric',month:'short'});};
 const randRot=()=>+(((Math.random()-.5)*5).toFixed(2));
-const centerPos=(W,H)=>({x:Math.round(W/2-100+Math.random()*60-30),y:Math.round(H/2-80+Math.random()*60-30)});
-
-const FONTS=[
+const centerPos=(W,H)=>({x:Math.round(W/2-100+Math.random()*60-30),y:Math.round(H/2-80+Math.random()*60-30)});const FONTS=[
   {id:'space',label:'Space',css:"'Space Grotesk',sans-serif"},
   {id:'playfair',label:'Playfair',css:"'Playfair Display',serif"},
   {id:'lora',label:'Lora',css:"'Lora',serif"},
@@ -371,15 +369,29 @@ function BoardEl({el,myId,onMove,onDelete,onUpdateCaption,boardRef}){
   const resizeStart=useRef(null);
   const isMe=el.author_id===myId;
 
+  // Convert stored % position to pixels for current board size
+  const getBoardSize=()=>{
+    const b=boardRef.current;
+    return b?{w:b.offsetWidth,h:b.offsetHeight}:{w:800,h:600};
+  };
+  const{w:boardW,h:boardH}=getBoardSize();
+  // Stored x,y are in 0-1000 normalized space
+  const pxX=Math.round((el.x/1000)*boardW);
+  const pxY=Math.round((el.y/1000)*boardH);
+
   const startDrag=useCallback((e)=>{
     if(e.target.closest('.resize-handle')||e.target.closest('.del-btn')||e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
     e.preventDefault();
     const s=e.touches?e.touches[0]:e;
-    dragStart.current={mx:s.clientX,my:s.clientY,ex:el.x,ey:el.y};
+    const{w,h}=getBoardSize();
+    dragStart.current={mx:s.clientX,my:s.clientY,ex:el.x,ey:el.y,bw:w,bh:h};
     const move=ev=>{
       const m=ev.touches?ev.touches[0]:ev;
       const dx=m.clientX-dragStart.current.mx,dy=m.clientY-dragStart.current.my;
-      onMove(el.id,Math.round(dragStart.current.ex+dx),Math.round(dragStart.current.ey+dy));
+      // Convert pixel delta to normalized 0-1000
+      const ndx=Math.round((dx/dragStart.current.bw)*1000);
+      const ndy=Math.round((dy/dragStart.current.bh)*1000);
+      onMove(el.id,Math.max(0,Math.min(1000,dragStart.current.ex+ndx)),Math.max(0,Math.min(1000,dragStart.current.ey+ndy)));
     };
     const up=()=>{document.removeEventListener('mousemove',move);document.removeEventListener('mouseup',up);document.removeEventListener('touchmove',move);document.removeEventListener('touchend',up);};
     document.addEventListener('mousemove',move);document.addEventListener('mouseup',up);
@@ -402,7 +414,7 @@ function BoardEl({el,myId,onMove,onDelete,onUpdateCaption,boardRef}){
   },[el,onMove]);
 
   const rot=el.rot||0;
-  const style={left:el.x,top:el.y,transform:`rotate(${rot}deg)`,zIndex:el.z||1};
+  const style={left:pxX,top:pxY,transform:`rotate(${rot}deg)`,zIndex:el.z||1};
 
   if(el.type==='postit'){
     const nc=PCOLORS.find(c=>c.id===el.color)||PCOLORS[0];
@@ -602,11 +614,15 @@ function App(){
         .lte('created_at',currentDay+'T23:59:59')
         .then(({data})=>{
           if(data){
-            setElements(prev=>{
-              // Merge: keep local positions if currently being dragged, but use server data otherwise
-              const serverIds=new Set(data.map(d=>d.id));
-              return data;
+            // Migrate any old pixel-based positions to normalized 0-1000 space
+            const migrated=data.map(el=>{
+              if(el.x>1000||el.y>1000){
+                // Old pixel coords, normalize assuming desktop ~1900x900
+                return{...el,x:Math.min(900,Math.round((el.x/1900)*1000)),y:Math.min(900,Math.round((el.y/900)*1000))};
+              }
+              return el;
             });
+            setElements(migrated);
           }
           setReady(true);
         });
@@ -633,10 +649,10 @@ function App(){
   };
   const addElement=async(data)=>{
     if(!session)return;
-    const{x,y}=getBoardCenter();
+    // Center in 0-1000 normalized space, with small random jitter
     const el={
       room_id:session.roomId,author_id:session.userId,author_name:session.userName,
-      x:x+Math.round((Math.random()-.5)*80),y:y+Math.round((Math.random()-.5)*60),
+      x:450+Math.round((Math.random()-.5)*100),y:400+Math.round((Math.random()-.5)*100),
       rot:randRot(),z:Date.now(),...data,
       created_at:new Date().toISOString(),
     };
