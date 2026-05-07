@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-title" content="MurmurTether"/>
+<meta name="theme-color" content="#0a0a0a"/>
+<title>MurmurTether</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;1,400&family=Lora:ital@0;1&family=DM+Mono&family=Caveat:wght@400;600&family=Cormorant+Garamond:ital,wght@0,300;1,300&family=Space+Grotesk:wght@300;400&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body,#root{height:100%;width:100%;overflow:hidden;}
+body{font-family:'Space Grotesk',system-ui,sans-serif;}
+@keyframes fadeIn{from{opacity:0;transform:scale(.94);}to{opacity:1;transform:scale(1);}}
+@keyframes flicker{0%,100%{opacity:.5;}50%{opacity:1;}}
+.el-in{animation:fadeIn .3s ease forwards;}
+.candle{animation:flicker 2s ease-in-out infinite;display:inline-block;}
+input[type=range]{-webkit-appearance:none;height:3px;border-radius:2px;outline:none;cursor:pointer;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;cursor:pointer;}
+input[type=color]{-webkit-appearance:none;border:none;padding:0;cursor:pointer;border-radius:50%;overflow:hidden;background:none;}
+input[type=color]::-webkit-color-swatch-wrapper{padding:0;}
+input[type=color]::-webkit-color-swatch{border:none;border-radius:50%;}
+textarea{font-family:inherit;resize:none;outline:none;border:none;background:transparent;}
+
+/* Board */
+.board{position:relative;width:100%;height:100%;overflow:hidden;transition:background .6s;}
+
+/* Elements on board */
+.board-el{position:absolute;cursor:grab;user-select:none;}
+.board-el:active{cursor:grabbing;}
+.board-el .del-btn{position:absolute;top:-10px;right:-10px;width:22px;height:22px;border-radius:50%;border:none;cursor:pointer;font-size:12px;display:none;align-items:center;justify-content:center;z-index:10;background:#e05555;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.3);}
+.board-el:hover .del-btn{display:flex;}
+.resize-handle{position:absolute;bottom:0;right:0;width:16px;height:16px;cursor:se-resize;opacity:0;transition:opacity .2s;}
+.board-el:hover .resize-handle{opacity:.5;}
+.resize-handle::after{content:'';position:absolute;bottom:3px;right:3px;width:8px;height:8px;border-right:2px solid;border-bottom:2px solid;}
+
+/* Postit */
+.postit{border-radius:3px;padding:14px 16px 12px;min-width:120px;max-width:260px;position:relative;box-shadow:2px 3px 12px rgba(0,0,0,.18),0 1px 3px rgba(0,0,0,.1);}
+.postit::before{content:'';position:absolute;top:0;left:0;right:0;height:28px;background:rgba(0,0,0,.06);border-radius:3px 3px 0 0;}
+.postit-author{font-size:10px;opacity:.4;margin-bottom:8px;margin-top:2px;}
+.postit-text{font-size:14px;line-height:1.55;word-break:break-word;}
+.postit-time{font-size:9px;opacity:.3;margin-top:8px;text-align:right;}
+
+/* Sketch sheet */
+.sketch{background:#fefefe;border-radius:2px;position:relative;overflow:hidden;box-shadow:2px 4px 16px rgba(0,0,0,.2),0 1px 4px rgba(0,0,0,.1);}
+.sketch.dark-sheet{background:#1a1a1a;}
+.sketch-author{position:absolute;top:6px;left:10px;font-size:10px;opacity:.3;pointer-events:none;}
+.sketch-time{position:absolute;bottom:6px;right:10px;font-size:9px;opacity:.25;pointer-events:none;}
+.sketch canvas{display:block;width:100%;height:100%;}
+
+/* Polaroid */
+.polaroid{background:#fff;border-radius:2px;box-shadow:2px 4px 18px rgba(0,0,0,.25),0 1px 4px rgba(0,0,0,.1);display:flex;flex-direction:column;}
+.polaroid-img{flex:1;overflow:hidden;}
+.polaroid-img img{width:100%;height:100%;object-fit:cover;display:block;}
+.polaroid-foot{padding:8px 12px 10px;background:#fff;}
+.polaroid-caption{font-family:'Caveat',cursive;font-size:14px;color:#333;text-align:center;border:none;outline:none;width:100%;background:transparent;}
+.polaroid-meta{font-size:9px;color:#aaa;text-align:right;margin-top:2px;}
+
+/* Header */
+.header{position:absolute;top:0;left:0;right:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;}
+.header-title{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:300;font-size:1.15rem;color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.5);}
+.hbtn{padding:5px 10px;border-radius:10px;font-size:12px;cursor:pointer;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.35);color:rgba(255,255,255,.8);font-family:inherit;backdrop-filter:blur(8px);transition:background .2s;}
+.hbtn:hover{background:rgba(0,0,0,.5);}
+.hbtn.active{background:rgba(255,255,255,.2);color:#fff;}
+
+/* Toolbar */
+.toolbar{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);z-index:50;display:flex;align-items:center;gap:8px;background:rgba(10,10,10,.6);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:8px 14px;}
+.tbtn{width:38px;height:38px;border-radius:12px;border:1px solid rgba(255,255,255,.15);background:transparent;color:rgba(255,255,255,.7);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:background .2s,color .2s;font-family:inherit;}
+.tbtn:hover,.tbtn.active{background:rgba(255,255,255,.15);color:#fff;}
+.tbtn-label{font-size:10px;color:rgba(255,255,255,.4);letter-spacing:.05em;}
+
+/* Day nav */
+.daynav{position:absolute;top:56px;left:50%;transform:translateX(-50%);z-index:50;display:flex;align-items:center;gap:10px;background:rgba(10,10,10,.45);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:5px 12px;}
+.daynav span{font-size:12px;color:rgba(255,255,255,.7);min-width:120px;text-align:center;}
+.daynav button{background:none;border:none;color:rgba(255,255,255,.5);cursor:pointer;font-size:16px;padding:0 4px;line-height:1;}
+.daynav button:hover{color:#fff;}
+
+/* Modal overlay */
+.overlay{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);}
+.modal{background:#141414;border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:20px;width:100%;max-width:420px;display:flex;flex-direction:column;gap:14px;}
+.modal.light{background:#fafaf7;border-color:rgba(0,0,0,.1);}
+.modal h3{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:300;font-size:1.3rem;}
+.minput{width:100%;padding:10px 14px;border-radius:12px;font-size:14px;outline:none;border:1px solid rgba(255,255,255,.1);background:#0d0d0d;color:#e4e4e4;font-family:inherit;}
+.minput.light{background:#f0eeea;border-color:rgba(0,0,0,.1);color:#1a1a1a;}
+.mrow{display:flex;gap:8px;}
+.mbtn{flex:1;padding:11px;border-radius:12px;font-size:13px;cursor:pointer;border:1px solid rgba(255,255,255,.15);background:transparent;color:#e4e4e4;font-family:inherit;font-weight:500;transition:opacity .2s;}
+.mbtn.primary{background:#e4e4e4;color:#0a0a0a;border-color:#e4e4e4;}
+.mbtn.light{color:#1a1a1a;border-color:rgba(0,0,0,.15);}
+.mbtn.primary.light{background:#1a1a1a;color:#fff;}
+.mbtn:hover{opacity:.85;}
+.font-row{display:flex;gap:6px;flex-wrap:wrap;}
+.fpill{padding:4px 10px;border-radius:16px;font-size:12px;cursor:pointer;border:1px solid rgba(255,255,255,.15);background:transparent;color:rgba(255,255,255,.7);transition:background .2s;}
+.fpill.active{background:rgba(255,255,255,.15);color:#fff;}
+.fpill.lactive{background:rgba(0,0,0,.1);color:#1a1a1a;border-color:rgba(0,0,0,.2);}
+.color-row{display:flex;gap:8px;}
+.cdot{width:22px;height:22px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:border-color .2s;}
+
+/* Draw toolbar */
+.dtoolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.dtool{width:30px;height:30px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:transparent;color:rgba(255,255,255,.7);cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;}
+.dtool.active{background:rgba(255,255,255,.2);color:#fff;}
+
+/* Onboard */
+.onboard{height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
+.ocard{width:100%;max-width:320px;display:flex;flex-direction:column;gap:18px;text-align:center;}
+.otitle{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:300;font-size:2.2rem;color:#e4e4e4;}
+.osub{font-size:13px;color:rgba(255,255,255,.35);}
+.obtn{padding:13px;border-radius:14px;font-size:14px;cursor:pointer;border:1px solid rgba(255,255,255,.15);background:transparent;color:#e4e4e4;font-family:inherit;font-weight:500;transition:opacity .2s;text-align:center;}
+.obtn.primary{background:#e4e4e4;color:#0a0a0a;border-color:#e4e4e4;}
+.obtn:hover{opacity:.85;}
+.oinput{width:100%;padding:11px 14px;border-radius:12px;font-size:14px;outline:none;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:#e4e4e4;font-family:inherit;}
+.olabel{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.3);text-align:left;margin-bottom:4px;display:block;}
+.oback{font-size:12px;background:none;border:none;cursor:pointer;color:rgba(255,255,255,.3);font-family:inherit;}
+.oerr{font-size:12px;color:#e08080;text-align:left;}
+
+/* Invite url */
+.iurl{padding:10px 12px;border-radius:10px;font-size:11px;word-break:break-all;user-select:all;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:rgba(255,255,255,.7);line-height:1.6;}
+
+/* SVG bg */
+.bgsvg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
+const {useState,useEffect,useRef,useCallback}=React;
+
+const SB_URL='https://fffmyllvcetchfrarjrt.supabase.co';
+const SB_KEY='sb_publishable_u89DH5nIDHMWayk8jiIC-w_xTJ-0gWP';
+const sb=supabase.createClient(SB_URL,SB_KEY);
+
+const ls={get:(k)=>{try{const v=localStorage.getItem('mt_'+k);return v?JSON.parse(v):null;}catch{return null;}},set:(k,v)=>{try{localStorage.setItem('mt_'+k,JSON.stringify(v));}catch{}}};
+const getIsDark=()=>{const h=new Date().getHours();return h<7||h>=18;};
+const todayStr=()=>new Date().toISOString().split('T')[0];
+const fmtDate=d=>{const o=new Date(d+'T12:00:00');return o.toLocaleDateString('es',{weekday:'short',day:'numeric',month:'short'});};
+const randRot=()=>+(((Math.random()-.5)*5).toFixed(2));
+const centerPos=(W,H)=>({x:Math.round(W/2-100+Math.random()*60-30),y:Math.round(H/2-80+Math.random()*60-30)});
+
+const FONTS=[
+  {id:'space',label:'Space',css:"'Space Grotesk',sans-serif"},
+  {id:'playfair',label:'Playfair',css:"'Playfair Display',serif"},
+  {id:'lora',label:'Lora',css:"'Lora',serif"},
+  {id:'cormorant',label:'Cormorant',css:"'Cormorant Garamond',serif"},
+  {id:'caveat',label:'Caveat',css:"'Caveat',cursive"},
+  {id:'mono',label:'Mono',css:"'DM Mono',monospace"},
+];
+
+const PCOLORS=[
+  {id:'cream',v:'#fefcf0'},{id:'rose',v:'#fde8e4'},{id:'sage',v:'#e8f2e8'},
+  {id:'sky',v:'#e4eef8'},{id:'sand',v:'#f5ecd8'},{id:'lavender',v:'#ede8f5'},
+];
+
+const applyY2K=(canvas,src)=>new Promise(res=>{
+  const img=new Image();
+  img.onload=()=>{
+    const W=310,H=Math.round(310*(img.height/img.width));
+    canvas.width=W;canvas.height=H;
+    const ctx=canvas.getContext('2d');
+    ctx.drawImage(img,0,0,W,H);
+    const id=ctx.getImageData(0,0,W,H);const d=id.data;
+    for(let i=0;i<d.length;i+=4){
+      d[i]=Math.min(255,d[i]*.88+18);d[i+1]=Math.min(255,d[i+1]*.95+14);d[i+2]=Math.min(255,d[i+2]*1.07+10);
+      const n=(Math.random()-.5)*28;d[i]+=n;d[i+1]+=n;d[i+2]+=n;
+    }
+    ctx.putImageData(id,0,0);
+    const vg=ctx.createRadialGradient(W/2,H/2,H*.2,W/2,H/2,H*.75);
+    vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.38)');
+    ctx.fillStyle=vg;ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='rgba(0,0,0,.04)';for(let y=0;y<H;y+=2)ctx.fillRect(0,y,W,1);
+    ctx.fillStyle='rgba(255,200,50,.8)';ctx.font='bold 10px monospace';
+    const now=new Date();ctx.fillText(`${String(now.getMonth()+1).padStart(2,'0')}/${now.getDate()}/${now.getFullYear()}`,W-76,H-8);
+    res(canvas.toDataURL('image/jpeg',.72));
+  };
+  img.src=src;
+});
+
+// ── Outdoor Background ───────────────────────────────────
+function OutdoorBg({isDark}){
+  return(
+    <svg className="bgsvg" preserveAspectRatio="xMidYMid slice" viewBox="0 0 1200 800">
+      <defs>
+        <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+          {isDark?<><stop offset="0%" stopColor="#06090f"/><stop offset="60%" stopColor="#0d1825"/><stop offset="100%" stopColor="#142030"/></>
+                 :<><stop offset="0%" stopColor="#8dc8e8"/><stop offset="60%" stopColor="#b8dff0"/><stop offset="100%" stopColor="#d8eef7"/></>}
+        </linearGradient>
+        <linearGradient id="mtn1" x1="0" y1="0" x2="0" y2="1">
+          {isDark?<><stop offset="0%" stopColor="#1a2a40"/><stop offset="100%" stopColor="#0a121e"/></>
+                 :<><stop offset="0%" stopColor="#4a7055"/><stop offset="100%" stopColor="#2e5038"/></>}
+        </linearGradient>
+        <linearGradient id="mtn2" x1="0" y1="0" x2="0" y2="1">
+          {isDark?<><stop offset="0%" stopColor="#111e30"/><stop offset="100%" stopColor="#070d18"/></>
+                 :<><stop offset="0%" stopColor="#6a9070"/><stop offset="100%" stopColor="#4a7055"/></>}
+        </linearGradient>
+        <filter id="blur1"><feGaussianBlur stdDeviation="1.5"/></filter>
+      </defs>
+      <rect width="1200" height="800" fill="url(#sky)"/>
+      {/* Stars */}
+      {isDark&&Array.from({length:80}).map((_,i)=>(
+        <circle key={i} cx={(i*137+50)%1200} cy={(i*73)%420} r={Math.random()*.9+.2} fill="white" opacity={Math.random()*.7+.15}/>
+      ))}
+      {/* Moon or sun */}
+      {isDark
+        ?<circle cx="900" cy="90" r="28" fill="#d4c87a" opacity=".9" filter="url(#blur1)"/>
+        :<circle cx="950" cy="80" r="40" fill="#fff8c0" opacity=".95" filter="url(#blur1)"/>
+      }
+      {/* Far mountains */}
+      <polygon points="0,800 0,520 120,420 250,490 380,390 520,460 660,360 800,440 940,350 1080,430 1200,370 1200,800" fill={isDark?'#0c1828':'#5a8065'} opacity=".6"/>
+      {/* Main mountains */}
+      <polygon points="0,800 0,560 100,490 220,540 360,450 500,520 640,420 760,500 900,400 1040,490 1200,440 1200,800" fill="url(#mtn2)"/>
+      <polygon points="0,800 0,640 80,590 180,620 300,560 440,610 580,540 720,600 860,530 1000,590 1200,550 1200,800" fill="url(#mtn1)"/>
+      {/* Snow caps */}
+      {[[360,450],[640,420],[900,400],[220,540],[580,540]].map(([x,y],i)=>(
+        <polygon key={i} points={`${x},${y} ${x-18},${y+30} ${x+18},${y+30}`} fill={isDark?'#7090a8':'#ffffff'} opacity={isDark?.7:.9}/>
+      ))}
+      {/* Trees */}
+      {Array.from({length:30}).map((_,i)=>{
+        const x=(i*43+10)%1200,y=680+(i%5)*18;
+        return <polygon key={i} points={`${x},${y} ${x-8},${y+24} ${x+8},${y+24}`} fill={isDark?'#060c12':'#1a3d22'}/>;
+      })}
+      {/* Snow falling */}
+      {isDark&&Array.from({length:25}).map((_,i)=>(
+        <circle key={i} cx={(i*91+20)%1200} cy="0" r="1.5" fill="white" opacity=".6">
+          <animate attributeName="cy" from="-10" to="810" dur={`${7+(i%6)}s`} repeatCount="indefinite" begin={`${i*.4}s`}/>
+          <animate attributeName="cx" values={`${(i*91+20)%1200};${(i*91+20)%1200+20};${(i*91+20)%1200}`} dur={`${7+(i%6)}s`} repeatCount="indefinite" begin={`${i*.4}s`}/>
+        </circle>
+      ))}
+    </svg>
+  );
+}
+
+// ── Draw Sheet Modal ─────────────────────────────────────
+function DrawModal({onSave,onCancel,isDark}){
+  const ref=useRef(null);
+  const [tool,setTool]=useState('pen');
+  const [color,setColor]=useState(isDark?'#e4e4e4':'#1a1a1a');
+  const [sz,setSz]=useState(3);
+  const drawing=useRef(false);
+  const last=useRef(null);
+
+  useEffect(()=>{
+    const c=ref.current,ctx=c.getContext('2d');
+    ctx.fillStyle=isDark?'#1a1a1a':'#fefefe';
+    ctx.fillRect(0,0,c.width,c.height);
+  },[]);
+
+  const getPos=(e,c)=>{
+    const r=c.getBoundingClientRect();
+    const s=e.touches?e.touches[0]:e;
+    return{x:(s.clientX-r.left)*(c.width/r.width),y:(s.clientY-r.top)*(c.height/r.height)};
+  };
+  const spray=(ctx,p)=>{
+    ctx.fillStyle=color;
+    for(let i=0;i<18;i++){const r=sz*4,x=p.x+(Math.random()-.5)*r*2,y=p.y+(Math.random()-.5)*r*2;if(Math.hypot(x-p.x,y-p.y)<r)ctx.fillRect(x,y,1.5,1.5);}
+  };
+  const onDown=e=>{e.preventDefault();drawing.current=true;const c=ref.current,p=getPos(e,c);last.current=p;if(tool==='spray')spray(c.getContext('2d'),p);};
+  const onMove=e=>{
+    if(!drawing.current)return;e.preventDefault();
+    const c=ref.current,ctx=c.getContext('2d'),p=getPos(e,c);
+    if(tool==='pen'||tool==='eraser'){
+      ctx.beginPath();ctx.moveTo(last.current.x,last.current.y);ctx.lineTo(p.x,p.y);
+      ctx.strokeStyle=tool==='eraser'?(isDark?'#1a1a1a':'#fefefe'):color;
+      ctx.lineWidth=tool==='eraser'?sz*4:sz;ctx.lineCap='round';ctx.lineJoin='round';ctx.stroke();last.current=p;
+    }else if(tool==='spray'){spray(ctx,p);last.current=p;}
+  };
+  const onUp=e=>{
+    if(!drawing.current)return;e.preventDefault();
+    const c=ref.current,ctx=c.getContext('2d'),p=getPos(e,c),l=last.current;
+    if(tool==='rect'){ctx.strokeStyle=color;ctx.lineWidth=sz;ctx.strokeRect(l.x,l.y,p.x-l.x,p.y-l.y);}
+    else if(tool==='line'){ctx.beginPath();ctx.moveTo(l.x,l.y);ctx.lineTo(p.x,p.y);ctx.strokeStyle=color;ctx.lineWidth=sz;ctx.lineCap='round';ctx.stroke();}
+    else if(tool==='circle'){const rx=Math.abs(p.x-l.x)/2,ry=Math.abs(p.y-l.y)/2;ctx.strokeStyle=color;ctx.lineWidth=sz;ctx.beginPath();ctx.ellipse(l.x+(p.x>l.x?rx:-rx),l.y+(p.y>l.y?ry:-ry),rx,ry,0,0,Math.PI*2);ctx.stroke();}
+    drawing.current=false;
+  };
+
+  const TOOLS=[{id:'pen',icon:'✏️'},{id:'eraser',icon:'◻'},{id:'spray',icon:'∷'},{id:'line',icon:'╱'},{id:'rect',icon:'▭'},{id:'circle',icon:'○'}];
+
+  return(
+    <div className="overlay">
+      <div className="modal" style={{maxWidth:520}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+          <h3 style={{color:'#e4e4e4'}}>Nueva hoja</h3>
+          <button onClick={onCancel} style={{background:'none',border:'none',cursor:'pointer',color:'rgba(255,255,255,.4)',fontSize:18}}>✕</button>
+        </div>
+        <div className="dtoolbar">
+          <div style={{display:'flex',gap:4}}>
+            {TOOLS.map(({id,icon})=>(
+              <button key={id} className={`dtool${tool===id?' active':''}`} onClick={()=>setTool(id)}>{icon}</button>
+            ))}
+          </div>
+          <input type="color" value={color} onChange={e=>setColor(e.target.value)} style={{width:28,height:28,borderRadius:'50%'}}/>
+          <div style={{display:'flex',alignItems:'center',gap:8,flex:1}}>
+            <span style={{fontSize:11,color:'rgba(255,255,255,.3)',whiteSpace:'nowrap'}}>grosor</span>
+            <input type="range" min="1" max="18" value={sz} onChange={e=>setSz(+e.target.value)} style={{flex:1,accentColor:'#e4e4e4'}}/>
+          </div>
+        </div>
+        <canvas ref={ref} width={480} height={300}
+          style={{width:'100%',borderRadius:8,border:'1px solid rgba(255,255,255,.08)',cursor:tool==='eraser'?'cell':'crosshair',touchAction:'none',display:'block'}}
+          onMouseDown={onDown} onMouseMove={onMove} onMouseUp={onUp} onMouseLeave={onUp}
+          onTouchStart={onDown} onTouchMove={onMove} onTouchEnd={onUp}/>
+        <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
+          <button className="mbtn" onClick={onCancel}>Cancelar</button>
+          <button className="mbtn primary" onClick={()=>onSave(ref.current.toDataURL('image/png'))}>Poner en tablón ✦</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Postit Modal ─────────────────────────────────────────
+function PostitModal({onSave,onCancel,isDark}){
+  const [text,setText]=useState('');
+  const [font,setFont]=useState('caveat');
+  const [color,setColor]=useState('cream');
+  const light=!isDark;
+
+  return(
+    <div className="overlay">
+      <div className={`modal${light?' light':''}`}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+          <h3 style={{color:light?'#1a1a1a':'#e4e4e4'}}>Nuevo post-it</h3>
+          <button onClick={onCancel} style={{background:'none',border:'none',cursor:'pointer',color:light?'rgba(0,0,0,.3)':'rgba(255,255,255,.4)',fontSize:18}}>✕</button>
+        </div>
+        <textarea value={text} onChange={e=>setText(e.target.value)} placeholder="escribe aquí..." rows={4} autoFocus
+          className={`minput${light?' light':''}`}
+          style={{fontFamily:FONTS.find(f=>f.id===font)?.css,fontSize:font==='caveat'?'1.1rem':'14px',resize:'none',lineHeight:1.6}}/>
+        <div>
+          <div style={{fontSize:10,letterSpacing:'.05em',textTransform:'uppercase',color:light?'rgba(0,0,0,.35)':'rgba(255,255,255,.3)',marginBottom:6}}>Fuente</div>
+          <div className="font-row">
+            {FONTS.map(f=>(
+              <button key={f.id} className={`fpill${font===f.id?(light?' lactive':' active'):''}`}
+                style={{fontFamily:f.css,borderColor:light?'rgba(0,0,0,.15)':'rgba(255,255,255,.15)',color:light?'rgba(0,0,0,.6)':'rgba(255,255,255,.6)'}}
+                onClick={()=>setFont(f.id)}>{f.label}</button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <div style={{fontSize:10,letterSpacing:'.05em',textTransform:'uppercase',color:light?'rgba(0,0,0,.35)':'rgba(255,255,255,.3)',marginBottom:6}}>Color</div>
+          <div className="color-row">
+            {PCOLORS.map(c=>(
+              <button key={c.id} className="cdot" onClick={()=>setColor(c.id)}
+                style={{background:c.v,borderColor:color===c.id?'#888':'transparent',boxShadow:color===c.id?'0 0 0 1px #888':'none'}}/>
+            ))}
+          </div>
+        </div>
+        <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
+          <button className={`mbtn${light?' light':''}`} onClick={onCancel}>Cancelar</button>
+          <button className={`mbtn primary${light?' light':''}`} disabled={!text.trim()} onClick={()=>text.trim()&&onSave({text,font,color})} style={{opacity:text.trim()?1:.4}}>Poner en tablón ✦</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Board Element ────────────────────────────────────────
+function BoardEl({el,myId,onMove,onDelete,onUpdateCaption,boardRef}){
+  const elRef=useRef(null);
+  const dragStart=useRef(null);
+  const resizeStart=useRef(null);
+  const isMe=el.author_id===myId;
+
+  const startDrag=useCallback((e)=>{
+    if(e.target.closest('.resize-handle')||e.target.closest('.del-btn')||e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+    e.preventDefault();
+    const s=e.touches?e.touches[0]:e;
+    dragStart.current={mx:s.clientX,my:s.clientY,ex:el.x,ey:el.y};
+    const move=ev=>{
+      const m=ev.touches?ev.touches[0]:ev;
+      const dx=m.clientX-dragStart.current.mx,dy=m.clientY-dragStart.current.my;
+      onMove(el.id,Math.round(dragStart.current.ex+dx),Math.round(dragStart.current.ey+dy));
+    };
+    const up=()=>{document.removeEventListener('mousemove',move);document.removeEventListener('mouseup',up);document.removeEventListener('touchmove',move);document.removeEventListener('touchend',up);};
+    document.addEventListener('mousemove',move);document.addEventListener('mouseup',up);
+    document.addEventListener('touchmove',move,{passive:false});document.addEventListener('touchend',up);
+  },[el,onMove]);
+
+  const startResize=useCallback((e)=>{
+    e.preventDefault();e.stopPropagation();
+    const s=e.touches?e.touches[0]:e;
+    resizeStart.current={mx:s.clientX,my:s.clientY,w:el.w||200,h:el.h||200};
+    const move=ev=>{
+      const m=ev.touches?ev.touches[0]:ev;
+      const dx=m.clientX-resizeStart.current.mx,dy=m.clientY-resizeStart.current.my;
+      const nw=Math.max(120,resizeStart.current.w+dx),nh=Math.max(100,resizeStart.current.h+dy);
+      onMove(el.id,el.x,el.y,nw,nh);
+    };
+    const up=()=>{document.removeEventListener('mousemove',move);document.removeEventListener('mouseup',up);document.removeEventListener('touchmove',move);document.removeEventListener('touchend',up);};
+    document.addEventListener('mousemove',move);document.addEventListener('mouseup',up);
+    document.addEventListener('touchmove',move,{passive:false});document.addEventListener('touchend',up);
+  },[el,onMove]);
+
+  const rot=el.rot||0;
+  const style={left:el.x,top:el.y,transform:`rotate(${rot}deg)`,zIndex:el.z||1};
+
+  if(el.type==='postit'){
+    const nc=PCOLORS.find(c=>c.id===el.color)||PCOLORS[0];
+    const font=FONTS.find(f=>f.id===el.font)||FONTS[4];
+    return(
+      <div ref={elRef} className="board-el el-in" style={style}
+        onMouseDown={startDrag} onTouchStart={startDrag}>
+        <button className="del-btn" onClick={()=>onDelete(el.id)}>✕</button>
+        <div className="postit" style={{background:nc.v,fontFamily:font.css}}>
+          <div className="postit-author">{el.author_name}</div>
+          <div className="postit-text" style={{fontSize:el.font==='caveat'?'1.1rem':'13px',fontStyle:['cormorant','lora'].includes(el.font)?'italic':'normal'}}>
+            {el.content}
+          </div>
+          <div className="postit-time">{new Date(el.created_at).toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'})}</div>
+        </div>
+      </div>
+    );
+  }
+
+  if(el.type==='sketch'){
+    const w=el.w||240,h=el.h||180;
+    return(
+      <div ref={elRef} className="board-el el-in" style={style}
+        onMouseDown={startDrag} onTouchStart={startDrag}>
+        <button className="del-btn" onClick={()=>onDelete(el.id)}>✕</button>
+        <div className={`sketch${getIsDark()?' dark-sheet':''}`} style={{width:w,height:h}}>
+          <div className="sketch-author">{el.author_name}</div>
+          <img src={el.content} alt="" style={{width:'100%',height:'100%',objectFit:'contain',display:'block'}}/>
+          <div className="sketch-time">{new Date(el.created_at).toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'})}</div>
+        </div>
+        <div className="resize-handle" onMouseDown={startResize} onTouchStart={startResize}
+          style={{borderColor:'rgba(0,0,0,.3)'}}/>
+      </div>
+    );
+  }
+
+  if(el.type==='polaroid'){
+    const w=el.w||180,imgH=Math.round(w*.85),footH=60;
+    return(
+      <div ref={elRef} className="board-el el-in" style={style}
+        onMouseDown={startDrag} onTouchStart={startDrag}>
+        <button className="del-btn" onClick={()=>onDelete(el.id)}>✕</button>
+        <div className="polaroid" style={{width:w}}>
+          <div className="polaroid-img" style={{height:imgH}}>
+            <img src={el.content} alt=""/>
+          </div>
+          <div className="polaroid-foot">
+            <input className="polaroid-caption" defaultValue={el.caption||''} placeholder="..."
+              onBlur={e=>onUpdateCaption(el.id,e.target.value)}
+              onMouseDown={e=>e.stopPropagation()} onTouchStart={e=>e.stopPropagation()}/>
+            <div className="polaroid-meta">{el.author_name} · {new Date(el.created_at).toLocaleDateString('es',{day:'numeric',month:'short'})}</div>
+          </div>
+        </div>
+        <div className="resize-handle" onMouseDown={startResize} onTouchStart={startResize}
+          style={{borderColor:'rgba(0,0,0,.2)'}}/>
+      </div>
+    );
+  }
+  return null;
+}
+
+// ── Onboarding ───────────────────────────────────────────
+function Onboarding({onDone}){
+  const [step,setStep]=useState('choice');
+  const [name,setName]=useState('');
+  const [code,setCode]=useState('');
+  const [loading,setLoading]=useState(false);
+  const [err,setErr]=useState('');
+
+  useEffect(()=>{
+    const params=new URLSearchParams(window.location.search);
+    const room=params.get('room');
+    if(room){setCode(room);setStep('join');}
+  },[]);
+
+  const create=async()=>{
+    if(!name.trim())return setErr('Ponete un apodo primero');
+    setLoading(true);setErr('');
+    const roomId='mt_'+Math.random().toString(36).slice(2,9);
+    const userId='u_'+Math.random().toString(36).slice(2)+Date.now().toString(36);
+    const{error}=await sb.from('murmur_rooms').insert({id:roomId,created_by:userId,members:[{id:userId,name:name.trim()}]});
+    if(error){setErr('Error al crear sala.');setLoading(false);return;}
+    ls.set('userId',userId);ls.set('userName',name.trim());ls.set('roomId',roomId);
+    onDone({userId,userName:name.trim(),roomId});
+  };
+
+  const join=async()=>{
+    if(!name.trim())return setErr('Ponete un apodo primero');
+    if(!code.trim())return setErr('Pegá el link o código');
+    setLoading(true);setErr('');
+    const roomId=code.trim().includes('room=')?new URLSearchParams(code.trim().split('?')[1]).get('room'):code.trim();
+    const{data,error}=await sb.from('murmur_rooms').select('*').eq('id',roomId).single();
+    if(error||!data){setErr('Sala no encontrada.');setLoading(false);return;}
+    const userId='u_'+Math.random().toString(36).slice(2)+Date.now().toString(36);
+    await sb.from('murmur_rooms').update({members:[...(data.members||[]),{id:userId,name:name.trim()}]}).eq('id',roomId);
+    ls.set('userId',userId);ls.set('userName',name.trim());ls.set('roomId',roomId);
+    onDone({userId,userName:name.trim(),roomId});
+  };
+
+  const isDark=getIsDark();
+  return(
+    <div className="onboard" style={{background:isDark?'#060910':'#e8f2f7',position:'relative',overflow:'hidden'}}>
+      <OutdoorBg isDark={isDark}/>
+      <div className="ocard" style={{position:'relative',zIndex:10}}>
+        <div>
+          <div style={{fontSize:'2.5rem',marginBottom:10}}>🌙</div>
+          <div className="otitle">MurmurTether</div>
+          <div className="osub">un tablón para los dos</div>
+        </div>
+        {step==='choice'&&(
+          <div style={{display:'flex',flexDirection:'column',gap:10}}>
+            <button className="obtn primary" onClick={()=>setStep('create')}>Crear tablón nuevo</button>
+            <button className="obtn" onClick={()=>setStep('join')}>Unirme con un link</button>
+          </div>
+        )}
+        {(step==='create'||step==='join')&&(
+          <div style={{display:'flex',flexDirection:'column',gap:12}}>
+            <div>
+              <label className="olabel">Tu apodo</label>
+              <input className="oinput" value={name} onChange={e=>setName(e.target.value)} placeholder="¿cómo te llaman acá?" autoFocus/>
+            </div>
+            {step==='join'&&(
+              <div>
+                <label className="olabel">Link de invitación</label>
+                <input className="oinput" value={code} onChange={e=>setCode(e.target.value)} placeholder="pegá el link aquí"/>
+              </div>
+            )}
+            {err&&<p className="oerr">{err}</p>}
+            <button className="obtn primary" onClick={step==='create'?create:join} disabled={loading} style={{opacity:loading?.6:1}}>
+              {loading?'un momento...':(step==='create'?'Crear tablón':'Entrar')}
+            </button>
+            <button className="oback" onClick={()=>{setStep('choice');setErr('');}}>← volver</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Main App ─────────────────────────────────────────────
+function App(){
+  const [session,setSession]=useState(null);
+  const [elements,setElements]=useState([]);
+  const [ready,setReady]=useState(false);
+  const [currentDay,setCurrentDay]=useState(todayStr());
+  const [isDark,setIsDark]=useState(getIsDark());
+  const [manual,setManual]=useState(null);
+  const [showPostit,setShowPostit]=useState(false);
+  const [showDraw,setShowDraw]=useState(false);
+  const [showInvite,setShowInvite]=useState(false);
+  const [inviteUrl,setInviteUrl]=useState('');
+  const boardRef=useRef(null);
+  const fileRef=useRef(null);
+  const filterCanvas=useRef(document.createElement('canvas'));
+  const dark=manual?manual==='night':isDark;
+
+  useEffect(()=>{
+    const i=setInterval(()=>setIsDark(getIsDark()),60000);
+    return()=>clearInterval(i);
+  },[]);
+
+  useEffect(()=>{
+    const s={userId:ls.get('userId'),userName:ls.get('userName'),roomId:ls.get('roomId')};
+    if(s.userId&&s.roomId)setSession(s);
+    else setReady(true);
+  },[]);
+
+  useEffect(()=>{
+    if(!session)return;
+    // Load elements for current day
+    sb.from('murmur_notes')
+      .select('*')
+      .eq('room_id',session.roomId)
+      .gte('created_at',currentDay+'T00:00:00')
+      .lte('created_at',currentDay+'T23:59:59')
+      .then(({data})=>{if(data)setElements(data);setReady(true);});
+
+    const ch=sb.channel('board_'+session.roomId+'_'+currentDay)
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'murmur_notes',filter:`room_id=eq.${session.roomId}`},
+        p=>{if(p.new.created_at?.startsWith(currentDay))setElements(prev=>[...prev,p.new]);})
+      .on('postgres_changes',{event:'UPDATE',schema:'public',table:'murmur_notes',filter:`room_id=eq.${session.roomId}`},
+        p=>{if(p.new.created_at?.startsWith(currentDay))setElements(prev=>prev.map(e=>e.id===p.new.id?p.new:e));})
+      .on('postgres_changes',{event:'DELETE',schema:'public',table:'murmur_notes',filter:`room_id=eq.${session.roomId}`},
+        p=>{setElements(prev=>prev.filter(e=>e.id!==p.old.id));})
+      .subscribe();
+    return()=>sb.removeChannel(ch);
+  },[session,currentDay]);
+
+  const getBoardCenter=()=>{
+    const b=boardRef.current;
+    if(!b)return{x:300,y:200};
+    return{x:Math.round(b.offsetWidth/2-100),y:Math.round(b.offsetHeight/2-80)};
+  };
+
+  const addElement=async(data)=>{
+    if(!session)return;
+    const{x,y}=getBoardCenter();
+    const el={
+      room_id:session.roomId,author_id:session.userId,author_name:session.userName,
+      x:x+Math.round((Math.random()-.5)*80),y:y+Math.round((Math.random()-.5)*60),
+      rot:randRot(),z:Date.now(),...data,
+      created_at:new Date().toISOString(),
+    };
+    await sb.from('murmur_notes').insert(el);
+  };
+
+  const moveElement=useCallback(async(id,x,y,w,h)=>{
+    const upd={x,y};if(w!==undefined)upd.w=w;if(h!==undefined)upd.h=h;
+    setElements(prev=>prev.map(e=>e.id===id?{...e,...upd}:e));
+    await sb.from('murmur_notes').update(upd).eq('id',id);
+  },[]);
+
+  const deleteElement=async(id)=>{
+    await sb.from('murmur_notes').delete().eq('id',id);
+    setElements(prev=>prev.filter(e=>e.id!==id));
+  };
+
+  const updateCaption=async(id,caption)=>{
+    await sb.from('murmur_notes').update({caption}).eq('id',id);
+  };
+
+  const handlePhoto=async e=>{
+    const file=e.target.files[0];if(!file)return;
+    const r=new FileReader();
+    r.onload=async ev=>{
+      const filtered=await applyY2K(filterCanvas.current,ev.target.result);
+      await addElement({type:'polaroid',content:filtered,w:180,caption:''});
+    };
+    r.readAsDataURL(file);e.target.value='';
+  };
+
+  const changeDay=delta=>{
+    const d=new Date(currentDay+'T12:00:00');d.setDate(d.getDate()+delta);
+    setCurrentDay(d.toISOString().split('T')[0]);
+  };
+
+  const getInvite=async()=>{
+    const url=`${window.location.origin}${window.location.pathname}?room=${session.roomId}`;
+    setInviteUrl(url);setShowInvite(true);
+    try{await navigator.clipboard.writeText(url);}catch{}
+  };
+
+  if(!ready&&!session)return null;
+  if(!session)return <Onboarding onDone={s=>setSession(s)}/>;
+
+  const isToday=currentDay===todayStr();
+
+  return(
+    <div className="board" ref={boardRef} style={{background:dark?'#060910':'#d8eef7'}}>
+      <OutdoorBg isDark={dark}/>
+
+      {/* Invite modal */}
+      {showInvite&&(
+        <div className="overlay">
+          <div className="modal">
+            <h3 style={{color:'#e4e4e4'}}>Compartí el tablón</h3>
+            <p style={{fontSize:13,color:'rgba(255,255,255,.4)'}}>Enviá este link. Solo hace falta abrirlo y elegir un apodo.</p>
+            <div className="iurl">{inviteUrl}</div>
+            <p style={{fontSize:11,color:'rgba(255,255,255,.3)',textAlign:'center'}}>copiado al portapapeles ✓</p>
+            <button className="mbtn primary" onClick={()=>setShowInvite(false)}>listo</button>
+          </div>
+        </div>
+      )}
+
+      {/* Modals */}
+      {showPostit&&<PostitModal isDark={dark} onCancel={()=>setShowPostit(false)}
+        onSave={async d=>{await addElement({type:'postit',content:d.text,font:d.font,color:d.color});setShowPostit(false);}}/>}
+      {showDraw&&<DrawModal isDark={dark} onCancel={()=>setShowDraw(false)}
+        onSave={async dataUrl=>{await addElement({type:'sketch',content:dataUrl,w:240,h:180});setShowDraw(false);}}/>}
+
+      {/* Header */}
+      <div className="header">
+        <span className="header-title">MurmurTether</span>
+        <div style={{display:'flex',gap:8,alignItems:'center'}}>
+          <div style={{display:'flex',borderRadius:10,overflow:'hidden',border:'1px solid rgba(255,255,255,.2)'}}>
+            <button className={`hbtn${manual==='day'?' active':''}`} onClick={()=>setManual(manual==='day'?null:'day')} style={{borderRadius:0,border:'none'}}>☀</button>
+            <button className={`hbtn${manual==='night'?' active':''}`} onClick={()=>setManual(manual==='night'?null:'night')} style={{borderRadius:0,border:'none'}}>☽</button>
+          </div>
+          <button className="hbtn" onClick={getInvite}>+ invitar</button>
+        </div>
+      </div>
+
+      {/* Day navigator */}
+      <div className="daynav">
+        <button onClick={()=>changeDay(-1)}>‹</button>
+        <span>{currentDay===todayStr()?'hoy':fmtDate(currentDay)}</span>
+        <button onClick={()=>changeDay(1)} disabled={isToday} style={{opacity:isToday?.3:1}}>›</button>
+      </div>
+
+      {/* Board elements */}
+      {elements.map(el=>(
+        <BoardEl key={el.id} el={el} myId={session.userId}
+          onMove={moveElement} onDelete={deleteElement} onUpdateCaption={updateCaption} boardRef={boardRef}/>
+      ))}
+
+      {/* Empty state */}
+      {elements.length===0&&ready&&(
+        <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',pointerEvents:'none'}}>
+          <div style={{textAlign:'center'}}>
+            <div style={{fontSize:'2.5rem',opacity:.2,marginBottom:8}}>🌙</div>
+            <p style={{fontFamily:"'Cormorant Garamond',serif",fontStyle:'italic',color:'rgba(255,255,255,.3)',fontSize:'1rem'}}>
+              {isToday?'el tablón te espera...':'sin recuerdos este día'}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Toolbar */}
+      <div className="toolbar">
+        <span className="tbtn-label">añadir</span>
+        <button className="tbtn" title="Post-it" onClick={()=>setShowPostit(true)}>🗒</button>
+        <button className="tbtn" title="Dibujo" onClick={()=>setShowDraw(true)}>✏️</button>
+        <button className="tbtn" title="Foto polaroid" onClick={()=>fileRef.current?.click()}>📷</button>
+        <input ref={fileRef} type="file" accept="image/*" style={{display:'none'}} onChange={handlePhoto}/>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
