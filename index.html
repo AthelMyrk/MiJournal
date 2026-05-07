@@ -1104,18 +1104,18 @@ function PostitModal({onSave,onCancel,isDark}){
 // ═══════════════════════════════════════════════════════════
 // Board Element — coordenadas en píxeles reales del canvas
 // ═══════════════════════════════════════════════════════════
-function BoardEl({el,myId,onMove,onDelete,onUpdateCaption,onPress,scale}){
+function BoardEl({el,myId,onMove,onDelete,onUpdateCaption,onPress,scale,onDragActive}){
   const elRef=useRef(null);
   const dragStart=useRef(null);
   const resizeStart=useRef(null);
 
   const startDrag=useCallback((e)=>{
     if(e.target.closest('.resize-handle')||e.target.closest('.del-btn')||e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
-    // Solo single-touch o mouse left button
     if(e.touches&&e.touches.length>1)return;
     e.preventDefault();
     e.stopPropagation();
     onPress&&onPress(el.id);
+    onDragActive&&onDragActive(true);
     const s=e.touches?e.touches[0]:e;
     dragStart.current={mx:s.clientX,my:s.clientY,ex:el.x,ey:el.y};
     const move=ev=>{
@@ -1125,10 +1125,14 @@ function BoardEl({el,myId,onMove,onDelete,onUpdateCaption,onPress,scale}){
       const dy=(m.clientY-dragStart.current.my)/scale;
       onMove(el.id,Math.round(dragStart.current.ex+dx),Math.round(dragStart.current.ey+dy));
     };
-    const up=()=>{document.removeEventListener('mousemove',move);document.removeEventListener('mouseup',up);document.removeEventListener('touchmove',move);document.removeEventListener('touchend',up);};
+    const up=()=>{
+      onDragActive&&onDragActive(false);
+      document.removeEventListener('mousemove',move);document.removeEventListener('mouseup',up);
+      document.removeEventListener('touchmove',move);document.removeEventListener('touchend',up);
+    };
     document.addEventListener('mousemove',move);document.addEventListener('mouseup',up);
     document.addEventListener('touchmove',move,{passive:false});document.addEventListener('touchend',up);
-  },[el,onMove,scale,onPress]);
+  },[el,onMove,scale,onPress,onDragActive]);
 
   const startResize=useCallback((e)=>{
     e.preventDefault();e.stopPropagation();
@@ -1437,52 +1441,58 @@ function App(){
   },[session,currentDay]);
 
   // ═══════════════════════════════════════════════════════════
-  // Pan & Zoom — gestos
+  // Pan & Zoom — motor de gestos reescrito
+  // Estrategia: el viewport escucha TODOS los eventos.
+  // Los board-el marcan un ref cuando empiezan a arrastrar.
+  // Si ese ref está activo, el viewport no panea.
   // ═══════════════════════════════════════════════════════════
+  const draggingEl=useRef(false); // true mientras un board-el está siendo arrastrado
+  const elDragActive=useCallback((v)=>{ draggingEl.current=v; },[]);
 
-  // Zoom con la rueda — zoom hacia el cursor
+  // Zoom con rueda — hacia el cursor
   const onWheel=useCallback((e)=>{
     e.preventDefault();
     const vp=viewportRefState.current;
-    const delta=-e.deltaY*0.0015;
+    const delta=-e.deltaY*(e.deltaMode===1?0.05:0.0012);
     const newScale=Math.max(MIN_ZOOM,Math.min(MAX_ZOOM,vp.scale*(1+delta)));
-    if(newScale===vp.scale)return;
-    // Mantener el punto bajo el cursor fijo
+    if(Math.abs(newScale-vp.scale)<0.001)return;
     const r=viewportRef.current.getBoundingClientRect();
     const cx=e.clientX-r.left-r.width/2;
     const cy=e.clientY-r.top-r.height/2;
     const ratio=newScale/vp.scale;
-    const newTx=cx-(cx-vp.tx)*ratio;
-    const newTy=cy-(cy-vp.ty)*ratio;
-    setViewport({tx:newTx,ty:newTy,scale:newScale});
+    setViewport({tx:cx-(cx-vp.tx)*ratio,ty:cy-(cy-vp.ty)*ratio,scale:newScale});
   },[]);
 
-  // Pan handler (mouse/touch) — solo cuando NO estoy interactuando con un elemento
+  // Todos los gestos de pan/pinch pasan por estos tres handlers
   const onPointerDown=useCallback((e)=>{
-    // Si el target está en un board-el, dejá que ese maneje
-    if(e.target.closest('.board-el'))return;
-    // Single touch o mouse
     if(e.touches){
-      if(e.touches.length===1){
-        e.preventDefault();
-        const t=e.touches[0];
-        gestureRef.current.panning=true;
-        gestureRef.current.panStart={cx:t.clientX,cy:t.clientY,vx:viewportRefState.current.tx,vy:viewportRefState.current.ty};
-        setIsPanning(true);
-      } else if(e.touches.length===2){
+      if(e.touches.length===2){
+        // Pinch — siempre, incluso sobre elementos
         e.preventDefault();
         const t1=e.touches[0],t2=e.touches[1];
-        const dist=Math.hypot(t2.clientX-t1.clientX,t2.clientY-t1.clientY);
-        const cx=(t1.clientX+t2.clientX)/2;
-        const cy=(t1.clientY+t2.clientY)/2;
         gestureRef.current.pinching=true;
         gestureRef.current.panning=false;
-        gestureRef.current.pinchStart={dist,cx,cy,vp:{...viewportRefState.current}};
+        gestureRef.current.pinchStart={
+          dist:Math.hypot(t2.clientX-t1.clientX,t2.clientY-t1.clientY),
+          cx:(t1.clientX+t2.clientX)/2,cy:(t1.clientY+t2.clientY)/2,
+          vp:{...viewportRefState.current}
+        };
+        return;
+      }
+      if(e.touches.length===1&&!draggingEl.current){
+        // Pan con 1 dedo solo si no hay elemento siendo arrastrado
+        e.preventDefault();
+        gestureRef.current.panning=true;
+        gestureRef.current.panStart={
+          cx:e.touches[0].clientX,cy:e.touches[0].clientY,
+          vx:viewportRefState.current.tx,vy:viewportRefState.current.ty
+        };
         setIsPanning(true);
       }
     } else {
-      // Mouse — pan con space+left, middle button, o sin nada cuando target es viewport
-      if(e.button===1||(e.button===0&&(spaceDown||e.target===viewportRef.current||e.target.classList.contains('canvas-world')))){
+      // Mouse: pan con boton medio, o space+izquierdo, o clic directo en el canvas vacío
+      const onElement=!!e.target.closest('.board-el');
+      if(e.button===1||(e.button===0&&(spaceDown||!onElement))){
         e.preventDefault();
         gestureRef.current.panning=true;
         gestureRef.current.panStart={cx:e.clientX,cy:e.clientY,vx:viewportRefState.current.tx,vy:viewportRefState.current.ty};
@@ -1492,63 +1502,62 @@ function App(){
   },[spaceDown]);
 
   const onPointerMove=useCallback((e)=>{
-    if(e.touches&&e.touches.length===2&&gestureRef.current.pinching){
+    // Pinch
+    if(gestureRef.current.pinching&&e.touches&&e.touches.length===2){
       e.preventDefault();
       const t1=e.touches[0],t2=e.touches[1];
       const dist=Math.hypot(t2.clientX-t1.clientX,t2.clientY-t1.clientY);
       const cx=(t1.clientX+t2.clientX)/2;
       const cy=(t1.clientY+t2.clientY)/2;
       const start=gestureRef.current.pinchStart;
-      const ratio=dist/start.dist;
-      const newScale=Math.max(MIN_ZOOM,Math.min(MAX_ZOOM,start.vp.scale*ratio));
-      // Centrar en el punto medio del pinch
+      const newScale=Math.max(MIN_ZOOM,Math.min(MAX_ZOOM,start.vp.scale*(dist/start.dist)));
       const r=viewportRef.current.getBoundingClientRect();
       const px=start.cx-r.left-r.width/2;
       const py=start.cy-r.top-r.height/2;
       const sr=newScale/start.vp.scale;
-      const dx=(cx-start.cx);
-      const dy=(cy-start.cy);
       setViewport({
-        tx:px-(px-start.vp.tx)*sr+dx,
-        ty:py-(py-start.vp.ty)*sr+dy,
+        tx:px-(px-start.vp.tx)*sr+(cx-start.cx),
+        ty:py-(py-start.vp.ty)*sr+(cy-start.cy),
         scale:newScale,
       });
       return;
     }
-    if(gestureRef.current.panning){
-      e.preventDefault();
+    // Pan
+    if(gestureRef.current.panning&&!draggingEl.current){
       const p=e.touches?e.touches[0]:e;
       const start=gestureRef.current.panStart;
-      const dx=p.clientX-start.cx;
-      const dy=p.clientY-start.cy;
-      setViewport(v=>({...v,tx:start.vx+dx,ty:start.vy+dy}));
+      if(!start)return;
+      setViewport(v=>({...v,tx:start.vx+(p.clientX-start.cx),ty:start.vy+(p.clientY-start.cy)}));
     }
   },[]);
 
   const onPointerUp=useCallback((e)=>{
-    if(gestureRef.current.pinching&&(!e.touches||e.touches.length<2)){
-      gestureRef.current.pinching=false;
-      // Si queda un dedo, transferir a pan
-      if(e.touches&&e.touches.length===1){
-        const t=e.touches[0];
-        gestureRef.current.panning=true;
-        gestureRef.current.panStart={cx:t.clientX,cy:t.clientY,vx:viewportRefState.current.tx,vy:viewportRefState.current.ty};
-        return;
+    if(gestureRef.current.pinching){
+      if(!e.touches||e.touches.length<2){
+        gestureRef.current.pinching=false;
+        // Transición suave a pan si queda 1 dedo
+        if(e.touches&&e.touches.length===1){
+          gestureRef.current.panning=true;
+          gestureRef.current.panStart={
+            cx:e.touches[0].clientX,cy:e.touches[0].clientY,
+            vx:viewportRefState.current.tx,vy:viewportRefState.current.ty
+          };
+        }
       }
     }
-    if(gestureRef.current.panning){
+    if(gestureRef.current.panning&&(!e.touches||e.touches.length===0)){
       gestureRef.current.panning=false;
       setIsPanning(false);
     }
   },[]);
 
-  // Listeners globales para pan/zoom
+  // Registrar listeners una sola vez (el viewport se monta una vez)
   useEffect(()=>{
     const v=viewportRef.current;if(!v)return;
     v.addEventListener('wheel',onWheel,{passive:false});
     v.addEventListener('mousedown',onPointerDown);
     v.addEventListener('touchstart',onPointerDown,{passive:false});
-    document.addEventListener('mousemove',onPointerMove);
+    document.addEventListener('mousemove',onPointerMove,{passive:false});
     document.addEventListener('touchmove',onPointerMove,{passive:false});
     document.addEventListener('mouseup',onPointerUp);
     document.addEventListener('touchend',onPointerUp);
@@ -1561,7 +1570,8 @@ function App(){
       document.removeEventListener('mouseup',onPointerUp);
       document.removeEventListener('touchend',onPointerUp);
     };
-  },[onWheel,onPointerDown,onPointerMove,onPointerUp]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[]);
 
   // Zoom buttons
   const zoomIn=()=>{
@@ -1713,7 +1723,7 @@ function App(){
             <BoardEl key={el.id} el={el} myId={session.userId}
               onMove={moveElement} onDelete={deleteElement}
               onUpdateCaption={updateCaption} onPress={pressElement}
-              scale={viewport.scale}/>
+              scale={viewport.scale} onDragActive={elDragActive}/>
           ))}
         </div>
 
