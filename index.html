@@ -18,11 +18,9 @@
 <style>
 /* ═══════════════════════════════════════════════════════════
    MurmurTether — Y2K elegante
-   Vidrio real, cromados sutiles, atmósfera viva
    ═══════════════════════════════════════════════════════════ */
 
 :root{
-  /* Glass tokens — noche */
   --glass-n-bg: rgba(14,18,28,0.55);
   --glass-n-bg-strong: rgba(14,18,28,0.78);
   --glass-n-border: rgba(255,255,255,0.10);
@@ -31,8 +29,6 @@
   --text-n: rgba(232,232,236,0.92);
   --text-n-soft: rgba(232,232,236,0.55);
   --text-n-faint: rgba(232,232,236,0.32);
-
-  /* Glass tokens — día */
   --glass-d-bg: rgba(255,255,255,0.42);
   --glass-d-bg-strong: rgba(252,250,245,0.82);
   --glass-d-border: rgba(255,255,255,0.55);
@@ -41,35 +37,22 @@
   --text-d: rgba(28,32,40,0.88);
   --text-d-soft: rgba(28,32,40,0.5);
   --text-d-faint: rgba(28,32,40,0.3);
-
-  /* Easing */
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-soft: cubic-bezier(0.4, 0.0, 0.2, 1);
 }
 
 *{box-sizing:border-box;margin:0;padding:0;}
 html,body,#root{height:100%;width:100%;overflow:hidden;-webkit-tap-highlight-color:transparent;}
-body{
-  font-family:'Space Grotesk',system-ui,sans-serif;
-  -webkit-text-size-adjust:100%;
-  -webkit-font-smoothing:antialiased;
-  -moz-osx-font-smoothing:grayscale;
-}
+body{font-family:'Space Grotesk',system-ui,sans-serif;-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;}
 
-/* ── Animations ──────────────────────────────────────────── */
 @keyframes fadeIn{from{opacity:0;transform:scale(.96) translateY(4px);}to{opacity:1;transform:scale(1) translateY(0);}}
 @keyframes flicker{0%,100%{opacity:.55;transform:scale(1);}50%{opacity:1;transform:scale(1.08);}}
 @keyframes breathe{0%,100%{transform:scale(1);}50%{transform:scale(1.02);}}
-@keyframes drift{0%,100%{transform:translateX(0);}50%{transform:translateX(20px);}}
-@keyframes shimmer{0%{background-position:-200% 0;}100%{background-position:200% 0;}}
-@keyframes twinkle{0%,100%{opacity:.3;}50%{opacity:1;}}
 @keyframes overlayIn{from{opacity:0;}to{opacity:1;}}
 @keyframes modalIn{from{opacity:0;transform:scale(.94) translateY(8px);}to{opacity:1;transform:scale(1) translateY(0);}}
 
 .el-in{animation:fadeIn .5s var(--ease-out-expo) forwards;}
-.candle{animation:flicker 2.4s ease-in-out infinite;display:inline-block;}
 
-/* ── Form elements ───────────────────────────────────────── */
 input[type=range]{-webkit-appearance:none;height:3px;border-radius:2px;outline:none;cursor:pointer;background:rgba(255,255,255,0.15);}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;cursor:pointer;background:#e8e8ec;box-shadow:0 0 0 1px rgba(0,0,0,.15),0 2px 6px rgba(0,0,0,.3);}
 input[type=color]{-webkit-appearance:none;border:none;padding:0;cursor:pointer;border-radius:50%;overflow:hidden;background:none;width:28px;height:28px;}
@@ -80,29 +63,27 @@ textarea{font-family:inherit;resize:none;outline:none;border:none;background:tra
 ::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.12);border-radius:2px;}
 
-/* ── Board ───────────────────────────────────────────────── */
+/* ── Board ── */
 .board{position:relative;width:100%;height:100%;overflow:hidden;transition:background .8s var(--ease-soft);}
 
-/* ── Canvas system ───────────────────────────────────────── */
+/* ── Canvas ── */
 .canvas-viewport{
-  position:absolute;left:0;right:0;top:0;bottom:0;overflow:hidden;
-  cursor:grab;touch-action:none;
-  z-index:1;
+  position:absolute;inset:0;overflow:hidden;
+  cursor:grab;touch-action:none;z-index:1;
 }
 .canvas-viewport.panning{cursor:grabbing;}
-.canvas-viewport.spacing{cursor:grab;}
 
-/* El canvas real, transformado con pan/zoom */
+/* canvas-world: origin en 0,0 del centro del viewport */
 .canvas-world{
   position:absolute;
   left:50%;top:50%;
-  width:1px;height:1px;
+  width:0;height:0;
   transform-origin:0 0;
   will-change:transform;
   overflow:visible;
 }
 
-/* Indicador de zoom flotante */
+/* ── Zoom indicator ── */
 .zoom-indicator{
   position:absolute;bottom:max(28px,calc(env(safe-area-inset-bottom) + 16px));
   right:18px;z-index:50;
@@ -133,7 +114,7 @@ textarea{font-family:inherit;resize:none;outline:none;border:none;background:tra
 .zoom-indicator.light button:hover{background:rgba(20,30,50,.08);color:var(--text-d);}
 .zoom-value{min-width:42px;text-align:center;}
 
-/* Botón centrar */
+/* ── Center button ── */
 .center-btn{
   position:absolute;bottom:max(28px,calc(env(safe-area-inset-bottom) + 16px));
   left:18px;z-index:50;
@@ -156,10 +137,10 @@ textarea{font-family:inherit;resize:none;outline:none;border:none;background:tra
 .center-btn.light{background:var(--glass-d-bg);border-color:var(--glass-d-border);color:var(--text-d);}
 .center-btn.light:hover{background:rgba(255,255,255,.65);}
 
-/* ── Background SVG ──────────────────────────────────────── */
+/* ── Background ── */
 .bgsvg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
 
-/* ── Board Elements ──────────────────────────────────────── */
+/* ── Board Elements ── */
 .board-el{position:absolute;cursor:grab;user-select:none;transition:filter .3s var(--ease-soft);}
 .board-el:hover{filter:brightness(1.03);z-index:100 !important;}
 .board-el:active{cursor:grabbing;}
@@ -186,95 +167,45 @@ textarea{font-family:inherit;resize:none;outline:none;border:none;background:tra
   border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;
 }
 
-/* ── Postit ──────────────────────────────────────────────── */
+/* ── Postit ── */
 .postit{
   border-radius:2px;padding:18px 18px 14px;min-width:130px;position:relative;
-  box-shadow:
-    0 1px 1px rgba(0,0,0,0.08),
-    0 4px 8px rgba(0,0,0,0.10),
-    0 12px 24px rgba(0,0,0,0.14),
-    0 1px 0 rgba(255,255,255,0.6) inset;
+  box-shadow:0 1px 1px rgba(0,0,0,0.08),0 4px 8px rgba(0,0,0,0.10),0 12px 24px rgba(0,0,0,0.14),0 1px 0 rgba(255,255,255,0.6) inset;
 }
 .postit::before{
   content:'';position:absolute;top:0;left:0;right:0;height:3px;
-  background:linear-gradient(90deg,
-    rgba(0,0,0,0.04) 0%,
-    rgba(255,255,255,0.5) 30%,
-    rgba(255,255,255,0.5) 70%,
-    rgba(0,0,0,0.04) 100%);
+  background:linear-gradient(90deg,rgba(0,0,0,0.04) 0%,rgba(255,255,255,0.5) 30%,rgba(255,255,255,0.5) 70%,rgba(0,0,0,0.04) 100%);
 }
-.postit::after{
-  content:'';position:absolute;top:0;right:0;width:18px;height:18px;
-  background:linear-gradient(225deg,rgba(0,0,0,0.06) 0%,rgba(0,0,0,0) 50%);
-  pointer-events:none;
-}
-.postit-author{
-  font-family:'Cormorant Garamond',serif;font-style:italic;
-  font-size:11px;opacity:.42;margin-bottom:10px;letter-spacing:.02em;
-}
+.postit::after{content:'';position:absolute;top:0;right:0;width:18px;height:18px;background:linear-gradient(225deg,rgba(0,0,0,0.06) 0%,rgba(0,0,0,0) 50%);pointer-events:none;}
+.postit-author{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:11px;opacity:.42;margin-bottom:10px;letter-spacing:.02em;}
 .postit-text{font-size:14px;line-height:1.6;word-break:break-word;}
-.postit-time{
-  font-family:'DM Mono',monospace;font-size:10px;opacity:.42;
-  margin-top:10px;text-align:right;letter-spacing:.05em;font-weight:500;
-}
+.postit-time{font-family:'DM Mono',monospace;font-size:10px;opacity:.42;margin-top:10px;text-align:right;letter-spacing:.05em;font-weight:500;}
 
-/* ── Sketch ──────────────────────────────────────────────── */
+/* ── Sketch ── */
 .sketch{
   background:#fafaf6;border-radius:2px;position:relative;overflow:hidden;
-  box-shadow:
-    0 1px 1px rgba(0,0,0,0.08),
-    0 4px 10px rgba(0,0,0,0.12),
-    0 14px 28px rgba(0,0,0,0.15);
+  box-shadow:0 1px 1px rgba(0,0,0,0.08),0 4px 10px rgba(0,0,0,0.12),0 14px 28px rgba(0,0,0,0.15);
 }
 .sketch.dark-sheet{background:#1a1c20;}
-.sketch::before{
-  content:'';position:absolute;inset:0;pointer-events:none;
-  background-image:
-    radial-gradient(circle at 20% 30%, rgba(0,0,0,0.025) 0%, transparent 40%),
-    radial-gradient(circle at 80% 70%, rgba(0,0,0,0.02) 0%, transparent 40%);
-}
-.sketch-author{
-  position:absolute;top:8px;left:12px;font-size:11px;opacity:.5;pointer-events:none;
-  font-family:'Cormorant Garamond',serif;font-style:italic;
-}
-.sketch-time{
-  position:absolute;bottom:8px;right:12px;font-size:10.5px;opacity:.5;pointer-events:none;
-  font-family:'DM Mono',monospace;letter-spacing:.05em;font-weight:500;
-  text-shadow:0 1px 2px rgba(0,0,0,0.3);
-}
+.sketch::before{content:'';position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(circle at 20% 30%,rgba(0,0,0,0.025) 0%,transparent 40%),radial-gradient(circle at 80% 70%,rgba(0,0,0,0.02) 0%,transparent 40%);}
+.sketch-author{position:absolute;top:8px;left:12px;font-size:11px;opacity:.5;pointer-events:none;font-family:'Cormorant Garamond',serif;font-style:italic;}
+.sketch-time{position:absolute;bottom:8px;right:12px;font-size:10.5px;opacity:.5;pointer-events:none;font-family:'DM Mono',monospace;letter-spacing:.05em;font-weight:500;text-shadow:0 1px 2px rgba(0,0,0,0.3);}
 .sketch:not(.dark-sheet) .sketch-time{text-shadow:0 1px 2px rgba(255,255,255,0.6);}
 .sketch img{display:block;width:100%;height:100%;}
 
-/* ── Polaroid ────────────────────────────────────────────── */
+/* ── Polaroid ── */
 .polaroid{
-  background:#fdfcf7;border-radius:2px;display:flex;flex-direction:column;
-  padding:10px 10px 0;
-  box-shadow:
-    0 1px 2px rgba(0,0,0,0.10),
-    0 6px 14px rgba(0,0,0,0.14),
-    0 18px 36px rgba(0,0,0,0.18),
-    0 1px 0 rgba(255,255,255,0.9) inset;
+  background:#fdfcf7;border-radius:2px;display:flex;flex-direction:column;padding:10px 10px 0;
+  box-shadow:0 1px 2px rgba(0,0,0,0.10),0 6px 14px rgba(0,0,0,0.14),0 18px 36px rgba(0,0,0,0.18),0 1px 0 rgba(255,255,255,0.9) inset;
 }
-.polaroid-img{
-  flex:1;overflow:hidden;background:#000;
-  box-shadow:0 0 0 1px rgba(0,0,0,0.08) inset;
-}
+.polaroid-img{flex:1;overflow:hidden;background:#000;box-shadow:0 0 0 1px rgba(0,0,0,0.08) inset;}
 .polaroid-img img{width:100%;height:100%;object-fit:cover;display:block;}
 .polaroid-foot{padding:10px 4px 14px;background:transparent;}
-.polaroid-caption{
-  font-family:'Caveat',cursive;font-size:15px;color:#2a2a2a;
-  text-align:center;border:none;outline:none;width:100%;background:transparent;
-}
+.polaroid-caption{font-family:'Caveat',cursive;font-size:15px;color:#2a2a2a;text-align:center;border:none;outline:none;width:100%;background:transparent;}
 .polaroid-caption::placeholder{color:#bbb;}
-.polaroid-meta{
-  font-family:'DM Mono',monospace;font-size:10px;color:#777;
-  text-align:right;margin-top:6px;letter-spacing:.06em;font-weight:500;
-}
+.polaroid-meta{font-family:'DM Mono',monospace;font-size:10px;color:#777;text-align:right;margin-top:6px;letter-spacing:.06em;font-weight:500;}
 
-/* ═══════════════════════════════════════════════════════════
-   Glass Surfaces — la firma visual
-   ═══════════════════════════════════════════════════════════ */
-
+/* ── Glass ── */
 .glass{
   background:var(--glass-n-bg);
   backdrop-filter:blur(20px) saturate(180%);
@@ -283,22 +214,13 @@ textarea{font-family:inherit;resize:none;outline:none;border:none;background:tra
   box-shadow:var(--glass-n-shadow);
   position:relative;
 }
-.glass::before{
-  content:'';position:absolute;top:0;left:8%;right:8%;height:1px;
-  background:linear-gradient(90deg,transparent,var(--glass-n-highlight) 50%,transparent);
-  pointer-events:none;
-}
-.glass.light{
-  background:var(--glass-d-bg);
-  border-color:var(--glass-d-border);
-  box-shadow:var(--glass-d-shadow);
-}
+.glass::before{content:'';position:absolute;top:0;left:8%;right:8%;height:1px;background:linear-gradient(90deg,transparent,var(--glass-n-highlight) 50%,transparent);pointer-events:none;}
+.glass.light{background:var(--glass-d-bg);border-color:var(--glass-d-border);box-shadow:var(--glass-d-shadow);}
 .glass.light::before{background:linear-gradient(90deg,transparent,var(--glass-d-highlight) 50%,transparent);}
-
 .glass-strong{background:var(--glass-n-bg-strong);}
 .glass-strong.light{background:var(--glass-d-bg-strong);}
 
-/* ── Header ──────────────────────────────────────────────── */
+/* ── Header ── */
 .header{
   position:absolute;top:0;left:0;right:0;z-index:50;
   display:flex;align-items:center;justify-content:space-between;
@@ -306,36 +228,22 @@ textarea{font-family:inherit;resize:none;outline:none;border:none;background:tra
   pointer-events:none;
 }
 .header > *{pointer-events:auto;}
-
-.header-mark{
-  width:32px;height:32px;display:flex;align-items:center;justify-content:center;
-  filter:drop-shadow(0 1px 8px rgba(0,0,0,0.4)) drop-shadow(0 0 16px rgba(180,200,240,0.15));
-  animation:breathe 6s ease-in-out infinite;
-}
+.header-mark{width:32px;height:32px;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 1px 8px rgba(0,0,0,0.4)) drop-shadow(0 0 16px rgba(180,200,240,0.15));animation:breathe 6s ease-in-out infinite;}
 .header-mark-svg{width:32px;height:32px;color:#e8e4f0;}
 .board[data-light="true"] .header-mark-svg{color:#1a2840;}
 .board[data-light="true"] .header-mark{filter:drop-shadow(0 1px 8px rgba(255,255,255,0.5)) drop-shadow(0 0 12px rgba(100,120,160,0.2));}
-
 .header-actions{display:flex;gap:8px;align-items:center;}
 
 .hbtn{
   height:34px;min-width:34px;padding:0 12px;border-radius:11px;
   font-size:12px;cursor:pointer;font-family:inherit;font-weight:500;
   display:flex;align-items:center;justify-content:center;gap:6px;
-  background:var(--glass-n-bg);
-  backdrop-filter:blur(16px) saturate(160%);
-  -webkit-backdrop-filter:blur(16px) saturate(160%);
-  border:1px solid var(--glass-n-border);
-  color:var(--text-n);
+  background:var(--glass-n-bg);backdrop-filter:blur(16px) saturate(160%);-webkit-backdrop-filter:blur(16px) saturate(160%);
+  border:1px solid var(--glass-n-border);color:var(--text-n);
   box-shadow:0 2px 8px rgba(0,0,0,.25),0 1px 0 rgba(255,255,255,0.08) inset;
-  transition:all .25s var(--ease-soft);
-  position:relative;
+  transition:all .25s var(--ease-soft);position:relative;
 }
-.hbtn::before{
-  content:'';position:absolute;top:0;left:15%;right:15%;height:1px;
-  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.18) 50%,transparent);
-  pointer-events:none;border-radius:11px 11px 0 0;
-}
+.hbtn::before{content:'';position:absolute;top:0;left:15%;right:15%;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.18) 50%,transparent);pointer-events:none;border-radius:11px 11px 0 0;}
 .hbtn:hover{background:rgba(30,40,60,0.7);transform:translateY(-1px);}
 .hbtn.active{background:rgba(255,255,255,.18);color:#fff;}
 .hbtn.light{background:var(--glass-d-bg);border-color:var(--glass-d-border);color:var(--text-d);}
@@ -344,22 +252,13 @@ textarea{font-family:inherit;resize:none;outline:none;border:none;background:tra
 
 .hbtn-group{
   display:flex;border-radius:11px;overflow:hidden;
-  border:1px solid var(--glass-n-border);
-  background:var(--glass-n-bg);
-  backdrop-filter:blur(16px) saturate(160%);
-  -webkit-backdrop-filter:blur(16px) saturate(160%);
-  box-shadow:0 2px 8px rgba(0,0,0,.25),0 1px 0 rgba(255,255,255,0.08) inset;
-  position:relative;
+  border:1px solid var(--glass-n-border);background:var(--glass-n-bg);
+  backdrop-filter:blur(16px) saturate(160%);-webkit-backdrop-filter:blur(16px) saturate(160%);
+  box-shadow:0 2px 8px rgba(0,0,0,.25),0 1px 0 rgba(255,255,255,0.08) inset;position:relative;
 }
-.hbtn-group::before{
-  content:'';position:absolute;top:0;left:15%;right:15%;height:1px;
-  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.18) 50%,transparent);
-  pointer-events:none;
-}
+.hbtn-group::before{content:'';position:absolute;top:0;left:15%;right:15%;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.18) 50%,transparent);pointer-events:none;}
 .hbtn-group.light{background:var(--glass-d-bg);border-color:var(--glass-d-border);}
-.hbtn-group .hbtn{
-  border:none;border-radius:0;background:transparent;box-shadow:none;height:34px;width:38px;padding:0;
-}
+.hbtn-group .hbtn{border:none;border-radius:0;background:transparent;box-shadow:none;height:34px;width:38px;padding:0;}
 .hbtn-group .hbtn::before{display:none;}
 .hbtn-group .hbtn.active{background:rgba(255,255,255,.16);}
 .hbtn-group.light .hbtn.active{background:rgba(20,30,50,.10);}
@@ -368,329 +267,148 @@ textarea{font-family:inherit;resize:none;outline:none;border:none;background:tra
 .icon-sm{width:12px;height:12px;}
 .icon-lg{width:18px;height:18px;}
 
-/* ── Daynav ──────────────────────────────────────────────── */
+/* ── Daynav ── */
 .daynav{
   position:absolute;top:max(60px,calc(env(safe-area-inset-top) + 60px));
   left:50%;transform:translateX(-50%);z-index:50;
-  display:flex;align-items:center;gap:6px;
-  padding:5px 8px;border-radius:13px;
-  background:var(--glass-n-bg);
-  backdrop-filter:blur(16px) saturate(160%);
-  -webkit-backdrop-filter:blur(16px) saturate(160%);
-  border:1px solid var(--glass-n-border);
-  box-shadow:0 4px 12px rgba(0,0,0,.3),0 1px 0 rgba(255,255,255,0.08) inset;
+  display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:13px;
+  background:var(--glass-n-bg);backdrop-filter:blur(16px) saturate(160%);-webkit-backdrop-filter:blur(16px) saturate(160%);
+  border:1px solid var(--glass-n-border);box-shadow:0 4px 12px rgba(0,0,0,.3),0 1px 0 rgba(255,255,255,0.08) inset;
 }
-.daynav::before{
-  content:'';position:absolute;top:0;left:20%;right:20%;height:1px;
-  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.16) 50%,transparent);
-  pointer-events:none;
-}
+.daynav::before{content:'';position:absolute;top:0;left:20%;right:20%;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.16) 50%,transparent);pointer-events:none;}
 .daynav.light{background:var(--glass-d-bg);border-color:var(--glass-d-border);}
-.daynav .day-label{
-  font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:300;
-  font-size:14px;color:var(--text-n);min-width:130px;text-align:center;
-  letter-spacing:.02em;
-}
+.daynav .day-label{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:300;font-size:14px;color:var(--text-n);min-width:130px;text-align:center;letter-spacing:.02em;}
 .daynav.light .day-label{color:var(--text-d);}
-.daynav button{
-  background:none;border:none;color:var(--text-n-soft);
-  cursor:pointer;width:26px;height:26px;border-radius:8px;
-  display:flex;align-items:center;justify-content:center;
-  transition:all .2s var(--ease-soft);
-}
+.daynav button{background:none;border:none;color:var(--text-n-soft);cursor:pointer;width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;transition:all .2s var(--ease-soft);}
 .daynav button:hover:not(:disabled){background:rgba(255,255,255,.1);color:var(--text-n);}
 .daynav button:disabled{opacity:.25;cursor:default;}
 .daynav.light button{color:var(--text-d-soft);}
 .daynav.light button:hover:not(:disabled){background:rgba(20,30,50,.08);color:var(--text-d);}
 
-/* ── Toolbar ─────────────────────────────────────────────── */
+/* ── Toolbar ── */
 .toolbar{
-  position:absolute;
-  bottom:max(28px,calc(env(safe-area-inset-bottom) + 16px));
+  position:absolute;bottom:max(28px,calc(env(safe-area-inset-bottom) + 16px));
   left:50%;transform:translateX(-50%);z-index:50;
-  display:flex;align-items:center;gap:6px;
-  padding:8px 10px;border-radius:18px;
-  background:var(--glass-n-bg-strong);
-  backdrop-filter:blur(24px) saturate(180%);
-  -webkit-backdrop-filter:blur(24px) saturate(180%);
+  display:flex;align-items:center;gap:6px;padding:8px 10px;border-radius:18px;
+  background:var(--glass-n-bg-strong);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);
   border:1px solid var(--glass-n-border);
-  box-shadow:
-    0 12px 32px rgba(0,0,0,.4),
-    0 1px 0 rgba(255,255,255,.12) inset,
-    0 -1px 0 rgba(0,0,0,.2) inset;
+  box-shadow:0 12px 32px rgba(0,0,0,.4),0 1px 0 rgba(255,255,255,.12) inset,0 -1px 0 rgba(0,0,0,.2) inset;
 }
-.toolbar::before{
-  content:'';position:absolute;top:0;left:15%;right:15%;height:1px;
-  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.22) 50%,transparent);
-  pointer-events:none;border-radius:18px 18px 0 0;
-}
+.toolbar::before{content:'';position:absolute;top:0;left:15%;right:15%;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.22) 50%,transparent);pointer-events:none;border-radius:18px 18px 0 0;}
 .toolbar.light{background:var(--glass-d-bg-strong);border-color:var(--glass-d-border);}
-
 .tbtn{
-  width:42px;height:42px;border-radius:13px;
-  border:1px solid rgba(255,255,255,.1);background:transparent;
-  color:var(--text-n);cursor:pointer;
-  display:flex;align-items:center;justify-content:center;
-  transition:all .25s var(--ease-soft);font-family:inherit;
-  position:relative;
+  width:42px;height:42px;border-radius:13px;border:1px solid rgba(255,255,255,.1);background:transparent;
+  color:var(--text-n);cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:all .25s var(--ease-soft);font-family:inherit;position:relative;
 }
 .tbtn:hover{background:rgba(255,255,255,.12);transform:translateY(-2px);}
 .tbtn.active{background:rgba(255,255,255,.16);}
 .toolbar.light .tbtn{color:var(--text-d);border-color:rgba(20,30,50,.08);}
 .toolbar.light .tbtn:hover{background:rgba(20,30,50,.06);}
-
-.tbtn-label{
-  font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:300;
-  font-size:13px;color:var(--text-n-soft);padding:0 8px 0 4px;
-  letter-spacing:.02em;
-}
+.tbtn-label{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:300;font-size:13px;color:var(--text-n-soft);padding:0 8px 0 4px;letter-spacing:.02em;}
 .toolbar.light .tbtn-label{color:var(--text-d-soft);}
 
-/* ── Modals ──────────────────────────────────────────────── */
+/* ── Modals ── */
 .overlay{
   position:fixed;inset:0;z-index:9999;
   display:flex;align-items:flex-start;justify-content:center;
   padding:20px;padding-top:max(20px,env(safe-area-inset-top));
-  background:rgba(6,8,12,0.7);
-  backdrop-filter:blur(12px);
-  -webkit-backdrop-filter:blur(12px);
+  background:rgba(6,8,12,0.7);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
   overflow-y:auto;-webkit-overflow-scrolling:touch;
-  animation:overlayIn .35s var(--ease-soft);
-  isolation:isolate;
+  animation:overlayIn .35s var(--ease-soft);isolation:isolate;
 }
-/* Cuando hay un overlay abierto, los elementos del tablón pierden el hover-z */
 body:has(.overlay) .board-el:hover{z-index:auto !important;}
-
 .modal{
-  background:rgba(18,22,32,0.92);
-  backdrop-filter:blur(28px) saturate(180%);
-  -webkit-backdrop-filter:blur(28px) saturate(180%);
-  border:1px solid rgba(255,255,255,0.12);
-  border-radius:22px;padding:22px;width:100%;max-width:440px;
+  background:rgba(18,22,32,0.92);backdrop-filter:blur(28px) saturate(180%);-webkit-backdrop-filter:blur(28px) saturate(180%);
+  border:1px solid rgba(255,255,255,0.12);border-radius:22px;padding:22px;width:100%;max-width:440px;
   display:flex;flex-direction:column;gap:16px;margin:auto 0;
-  box-shadow:
-    0 24px 64px rgba(0,0,0,.55),
-    0 1px 0 rgba(255,255,255,.14) inset,
-    0 -1px 0 rgba(0,0,0,.3) inset;
-  position:relative;
-  animation:modalIn .4s var(--ease-out-expo);
+  box-shadow:0 24px 64px rgba(0,0,0,.55),0 1px 0 rgba(255,255,255,.14) inset,0 -1px 0 rgba(0,0,0,.3) inset;
+  position:relative;animation:modalIn .4s var(--ease-out-expo);
 }
-.modal::before{
-  content:'';position:absolute;top:0;left:10%;right:10%;height:1px;
-  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.25) 50%,transparent);
-  pointer-events:none;border-radius:22px 22px 0 0;
-}
-.modal.light{
-  background:rgba(252,250,245,0.92);border-color:rgba(255,255,255,.6);
-  box-shadow:
-    0 24px 64px rgba(40,50,70,.25),
-    0 1px 0 rgba(255,255,255,.8) inset;
-}
+.modal::before{content:'';position:absolute;top:0;left:10%;right:10%;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.25) 50%,transparent);pointer-events:none;border-radius:22px 22px 0 0;}
+.modal.light{background:rgba(252,250,245,0.92);border-color:rgba(255,255,255,.6);box-shadow:0 24px 64px rgba(40,50,70,.25),0 1px 0 rgba(255,255,255,.8) inset;}
 .modal.light::before{background:linear-gradient(90deg,transparent,rgba(255,255,255,0.9) 50%,transparent);}
-
-.modal h3{
-  font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:300;
-  font-size:1.5rem;color:var(--text-n);letter-spacing:.01em;
-}
+.modal h3{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:300;font-size:1.5rem;color:var(--text-n);letter-spacing:.01em;}
 .modal.light h3{color:var(--text-d);}
-
-.modal-close{
-  background:none;border:none;cursor:pointer;
-  color:var(--text-n-soft);width:28px;height:28px;border-radius:8px;
-  display:flex;align-items:center;justify-content:center;
-  transition:all .2s var(--ease-soft);
-}
+.modal-close{background:none;border:none;cursor:pointer;color:var(--text-n-soft);width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;transition:all .2s var(--ease-soft);}
 .modal-close:hover{background:rgba(255,255,255,.08);color:var(--text-n);}
 .modal.light .modal-close{color:var(--text-d-soft);}
 .modal.light .modal-close:hover{background:rgba(20,30,50,.06);color:var(--text-d);}
 
-.minput{
-  width:100%;padding:12px 16px;border-radius:13px;font-size:16px;outline:none;
-  border:1px solid rgba(255,255,255,.1);
-  background:rgba(0,0,0,0.25);
-  color:var(--text-n);font-family:inherit;-webkit-appearance:none;
-  transition:border-color .2s var(--ease-soft),background .2s var(--ease-soft);
-}
+.minput{width:100%;padding:12px 16px;border-radius:13px;font-size:16px;outline:none;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,0.25);color:var(--text-n);font-family:inherit;-webkit-appearance:none;transition:border-color .2s var(--ease-soft),background .2s var(--ease-soft);}
 .minput:focus{border-color:rgba(255,255,255,.25);background:rgba(0,0,0,0.35);}
 .minput.light{background:rgba(255,255,255,.55);border-color:rgba(20,30,50,.1);color:var(--text-d);}
 .minput.light:focus{border-color:rgba(20,30,50,.25);background:rgba(255,255,255,.75);}
-
 .mrow{display:flex;gap:8px;}
-
-.mbtn{
-  flex:1;padding:12px;border-radius:13px;font-size:13px;cursor:pointer;
-  border:1px solid rgba(255,255,255,.14);background:transparent;
-  color:var(--text-n);font-family:inherit;font-weight:500;letter-spacing:.01em;
-  transition:all .25s var(--ease-soft);
-}
+.mbtn{flex:1;padding:12px;border-radius:13px;font-size:13px;cursor:pointer;border:1px solid rgba(255,255,255,.14);background:transparent;color:var(--text-n);font-family:inherit;font-weight:500;letter-spacing:.01em;transition:all .25s var(--ease-soft);}
 .mbtn:hover:not(:disabled){background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.22);}
-.mbtn.primary{
-  background:linear-gradient(180deg,#f4f4f6,#dcdce0);color:#0a0a0a;border-color:transparent;
-  box-shadow:0 1px 0 rgba(255,255,255,.5) inset,0 4px 12px rgba(0,0,0,.3);
-}
+.mbtn.primary{background:linear-gradient(180deg,#f4f4f6,#dcdce0);color:#0a0a0a;border-color:transparent;box-shadow:0 1px 0 rgba(255,255,255,.5) inset,0 4px 12px rgba(0,0,0,.3);}
 .mbtn.primary:hover:not(:disabled){background:linear-gradient(180deg,#fff,#e8e8ec);transform:translateY(-1px);}
 .mbtn:disabled{opacity:.4;cursor:default;}
 .mbtn.light{color:var(--text-d);border-color:rgba(20,30,50,.15);}
 .mbtn.light:hover:not(:disabled){background:rgba(20,30,50,.05);}
 .mbtn.primary.light{background:linear-gradient(180deg,#1a1a1a,#0a0a0a);color:#fff;}
-
-.mlabel{
-  font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:400;
-  font-size:13px;color:var(--text-n-soft);margin-bottom:8px;letter-spacing:.02em;
-}
+.mlabel{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:400;font-size:13px;color:var(--text-n-soft);margin-bottom:8px;letter-spacing:.02em;}
 .modal.light .mlabel{color:var(--text-d-soft);}
-
 .font-row{display:flex;gap:6px;flex-wrap:wrap;}
-.fpill{
-  padding:5px 12px;border-radius:14px;font-size:12px;cursor:pointer;
-  border:1px solid rgba(255,255,255,.14);background:transparent;color:var(--text-n-soft);
-  transition:all .2s var(--ease-soft);
-}
+.fpill{padding:5px 12px;border-radius:14px;font-size:12px;cursor:pointer;border:1px solid rgba(255,255,255,.14);background:transparent;color:var(--text-n-soft);transition:all .2s var(--ease-soft);}
 .fpill:hover{background:rgba(255,255,255,.06);}
 .fpill.active{background:rgba(255,255,255,.16);color:var(--text-n);border-color:rgba(255,255,255,.25);}
 .modal.light .fpill{color:var(--text-d-soft);border-color:rgba(20,30,50,.15);}
 .modal.light .fpill:hover{background:rgba(20,30,50,.05);}
 .modal.light .fpill.active{background:rgba(20,30,50,.1);color:var(--text-d);border-color:rgba(20,30,50,.25);}
-
 .color-row{display:flex;gap:10px;}
-.cdot{
-  width:26px;height:26px;border-radius:50%;cursor:pointer;
-  border:2px solid transparent;
-  box-shadow:0 0 0 1px rgba(0,0,0,.1) inset,0 2px 4px rgba(0,0,0,.15);
-  transition:transform .2s var(--ease-soft);
-}
+.cdot{width:26px;height:26px;border-radius:50%;cursor:pointer;border:2px solid transparent;box-shadow:0 0 0 1px rgba(0,0,0,.1) inset,0 2px 4px rgba(0,0,0,.15);transition:transform .2s var(--ease-soft);}
 .cdot:hover{transform:scale(1.1);}
 .cdot.active{box-shadow:0 0 0 2px var(--text-n) inset,0 0 0 1px rgba(0,0,0,.1) inset,0 2px 4px rgba(0,0,0,.15);}
 .modal.light .cdot.active{box-shadow:0 0 0 2px var(--text-d) inset,0 0 0 1px rgba(0,0,0,.1) inset,0 2px 4px rgba(0,0,0,.15);}
 
-/* ── Draw toolbar ────────────────────────────────────────── */
+/* ── Draw toolbar ── */
 .dtoolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-.dtool{
-  width:32px;height:32px;border-radius:9px;
-  border:1px solid rgba(255,255,255,.14);background:transparent;
-  color:var(--text-n);cursor:pointer;
-  display:flex;align-items:center;justify-content:center;
-  transition:all .2s var(--ease-soft);
-}
+.dtool{width:32px;height:32px;border-radius:9px;border:1px solid rgba(255,255,255,.14);background:transparent;color:var(--text-n);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s var(--ease-soft);}
 .dtool:hover{background:rgba(255,255,255,.08);}
 .dtool.active{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.3);}
 
-/* ── Onboard ─────────────────────────────────────────────── */
-.onboard{
-  height:100vh;height:100dvh;
-  display:flex;align-items:center;justify-content:center;
-  padding:24px;position:relative;overflow:hidden;
-}
-.ocard{
-  width:100%;max-width:340px;display:flex;flex-direction:column;gap:22px;
-  text-align:center;position:relative;z-index:10;
-  padding:32px 28px;border-radius:24px;
-  background:rgba(14,18,28,0.6);
-  backdrop-filter:blur(28px) saturate(180%);
-  -webkit-backdrop-filter:blur(28px) saturate(180%);
-  border:1px solid rgba(255,255,255,.12);
-  box-shadow:
-    0 24px 64px rgba(0,0,0,.55),
-    0 1px 0 rgba(255,255,255,.14) inset;
-}
-.ocard::before{
-  content:'';position:absolute;top:0;left:10%;right:10%;height:1px;
-  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.25) 50%,transparent);
-  pointer-events:none;border-radius:24px 24px 0 0;
-}
-
+/* ── Onboard ── */
+.onboard{height:100vh;height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px;position:relative;overflow:hidden;}
+.ocard{width:100%;max-width:340px;display:flex;flex-direction:column;gap:22px;text-align:center;position:relative;z-index:10;padding:32px 28px;border-radius:24px;background:rgba(14,18,28,0.6);backdrop-filter:blur(28px) saturate(180%);-webkit-backdrop-filter:blur(28px) saturate(180%);border:1px solid rgba(255,255,255,.12);box-shadow:0 24px 64px rgba(0,0,0,.55),0 1px 0 rgba(255,255,255,.14) inset;}
+.ocard::before{content:'';position:absolute;top:0;left:10%;right:10%;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.25) 50%,transparent);pointer-events:none;border-radius:24px 24px 0 0;}
 .ocard.light{background:rgba(252,250,245,0.78);border-color:rgba(255,255,255,.6);}
 .ocard.light::before{background:linear-gradient(90deg,transparent,rgba(255,255,255,0.9) 50%,transparent);}
-
 .obrand{display:flex;flex-direction:column;align-items:center;gap:8px;}
-.obrand-mark{
-  width:48px;height:48px;display:flex;align-items:center;justify-content:center;
-  animation:breathe 5s ease-in-out infinite;
-}
-.otitle{
-  font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:300;
-  font-size:2.4rem;color:rgba(232,232,236,.95);letter-spacing:.005em;line-height:1;
-}
+.obrand-mark{width:48px;height:48px;display:flex;align-items:center;justify-content:center;animation:breathe 5s ease-in-out infinite;}
+.otitle{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:300;font-size:2.4rem;color:rgba(232,232,236,.95);letter-spacing:.005em;line-height:1;}
 .ocard.light .otitle{color:rgba(20,30,50,.9);}
-.osub{
-  font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:400;
-  font-size:14px;color:rgba(232,232,236,.5);letter-spacing:.04em;
-}
+.osub{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:400;font-size:14px;color:rgba(232,232,236,.5);letter-spacing:.04em;}
 .ocard.light .osub{color:rgba(20,30,50,.5);}
-
-.obtn{
-  padding:14px;border-radius:14px;font-size:14px;cursor:pointer;
-  border:1px solid rgba(255,255,255,.16);background:transparent;color:var(--text-n);
-  font-family:inherit;font-weight:500;letter-spacing:.01em;
-  transition:all .25s var(--ease-soft);text-align:center;
-}
+.obtn{padding:14px;border-radius:14px;font-size:14px;cursor:pointer;border:1px solid rgba(255,255,255,.16);background:transparent;color:var(--text-n);font-family:inherit;font-weight:500;letter-spacing:.01em;transition:all .25s var(--ease-soft);text-align:center;}
 .obtn:hover{background:rgba(255,255,255,.06);transform:translateY(-1px);}
-.obtn.primary{
-  background:linear-gradient(180deg,#f4f4f6,#dcdce0);color:#0a0a0a;border-color:transparent;
-  box-shadow:0 1px 0 rgba(255,255,255,.5) inset,0 4px 14px rgba(0,0,0,.35);
-}
+.obtn.primary{background:linear-gradient(180deg,#f4f4f6,#dcdce0);color:#0a0a0a;border-color:transparent;box-shadow:0 1px 0 rgba(255,255,255,.5) inset,0 4px 14px rgba(0,0,0,.35);}
 .obtn.primary:hover{background:linear-gradient(180deg,#fff,#e8e8ec);}
 .ocard.light .obtn{color:var(--text-d);border-color:rgba(20,30,50,.15);}
 .ocard.light .obtn:hover{background:rgba(20,30,50,.05);}
 .ocard.light .obtn.primary{background:linear-gradient(180deg,#1a1a1a,#0a0a0a);color:#fff;}
-
-.oinput{
-  width:100%;padding:13px 16px;border-radius:13px;font-size:16px;outline:none;
-  border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);
-  color:var(--text-n);font-family:inherit;-webkit-appearance:none;
-  transition:all .2s var(--ease-soft);
-}
+.oinput{width:100%;padding:13px 16px;border-radius:13px;font-size:16px;outline:none;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:var(--text-n);font-family:inherit;-webkit-appearance:none;transition:all .2s var(--ease-soft);}
 .oinput:focus{border-color:rgba(255,255,255,.3);background:rgba(255,255,255,.08);}
 .ocard.light .oinput{background:rgba(255,255,255,.5);border-color:rgba(20,30,50,.12);color:var(--text-d);}
 .ocard.light .oinput:focus{background:rgba(255,255,255,.75);border-color:rgba(20,30,50,.3);}
-
-.olabel{
-  font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:400;
-  font-size:12px;color:rgba(232,232,236,.5);
-  text-align:left;margin-bottom:6px;display:block;letter-spacing:.04em;
-}
+.olabel{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:400;font-size:12px;color:rgba(232,232,236,.5);text-align:left;margin-bottom:6px;display:block;letter-spacing:.04em;}
 .ocard.light .olabel{color:rgba(20,30,50,.5);}
-
-.oback{
-  font-size:12px;background:none;border:none;cursor:pointer;
-  color:rgba(232,232,236,.4);font-family:inherit;letter-spacing:.02em;
-  transition:color .2s var(--ease-soft);
-}
+.oback{font-size:12px;background:none;border:none;cursor:pointer;color:rgba(232,232,236,.4);font-family:inherit;letter-spacing:.02em;transition:color .2s var(--ease-soft);}
 .oback:hover{color:rgba(232,232,236,.7);}
 .ocard.light .oback{color:rgba(20,30,50,.4);}
+.oerr{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:13px;color:#e88080;text-align:left;letter-spacing:.01em;}
 
-.oerr{
-  font-family:'Cormorant Garamond',serif;font-style:italic;
-  font-size:13px;color:#e88080;text-align:left;letter-spacing:.01em;
-}
+/* ── Invite URL ── */
+.iurl{padding:12px 14px;border-radius:11px;font-family:'DM Mono',monospace;font-size:11px;word-break:break-all;user-select:all;letter-spacing:.02em;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.25);color:rgba(232,232,236,.75);line-height:1.6;}
 
-/* ── Invite URL ──────────────────────────────────────────── */
-.iurl{
-  padding:12px 14px;border-radius:11px;font-family:'DM Mono',monospace;
-  font-size:11px;word-break:break-all;user-select:all;letter-spacing:.02em;
-  border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.25);
-  color:rgba(232,232,236,.75);line-height:1.6;
-}
-
-/* ── Empty state ─────────────────────────────────────────── */
-.empty-state{
-  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-  pointer-events:none;
-}
-.empty-mark{
-  display:flex;flex-direction:column;align-items:center;gap:14px;
-}
-.empty-glyph{
-  width:42px;height:42px;opacity:.22;
-  animation:breathe 5s ease-in-out infinite;
-}
-.empty-text{
-  font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:300;
-  color:rgba(255,255,255,.42);font-size:1.05rem;letter-spacing:.02em;
-}
+/* ── Empty state ── */
+.empty-state{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;}
+.empty-mark{display:flex;flex-direction:column;align-items:center;gap:14px;}
+.empty-glyph{width:42px;height:42px;opacity:.22;animation:breathe 5s ease-in-out infinite;}
+.empty-text{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:300;color:rgba(255,255,255,.42);font-size:1.05rem;letter-spacing:.02em;}
 .empty-text.light{color:rgba(20,30,50,.4);}
 
-/* ── Mobile tweaks ───────────────────────────────────────── */
 @media (max-width:520px){
   .header{padding:12px 14px;padding-top:max(12px,env(safe-area-inset-top));}
   .header-mark{width:28px;height:28px;}
@@ -721,7 +439,10 @@ const SB_URL='https://fffmyllvcetchfrarjrt.supabase.co';
 const SB_KEY='sb_publishable_u89DH5nIDHMWayk8jiIC-w_xTJ-0gWP';
 const sb=supabase.createClient(SB_URL,SB_KEY);
 
-const ls={get:(k)=>{try{const v=localStorage.getItem('mt_'+k);return v?JSON.parse(v):null;}catch{return null;}},set:(k,v)=>{try{localStorage.setItem('mt_'+k,JSON.stringify(v));}catch{}}};
+const ls={
+  get:(k)=>{try{const v=localStorage.getItem('mt_'+k);return v?JSON.parse(v):null;}catch{return null;}},
+  set:(k,v)=>{try{localStorage.setItem('mt_'+k,JSON.stringify(v));}catch{}},
+};
 const getIsDark=()=>{const h=new Date().getHours();return h<7||h>=18;};
 const todayStr=()=>new Date().toISOString().split('T')[0];
 const fmtDate=d=>{const o=new Date(d+'T12:00:00');return o.toLocaleDateString('es',{weekday:'short',day:'numeric',month:'short'});};
@@ -735,14 +456,15 @@ const FONTS=[
   {id:'caveat',label:'Caveat',css:"'Caveat',cursive"},
   {id:'mono',label:'Mono',css:"'DM Mono',monospace"},
 ];
-
 const PCOLORS=[
   {id:'cream',v:'#fefcf0'},{id:'rose',v:'#fde8e4'},{id:'sage',v:'#e8f2e8'},
   {id:'sky',v:'#e4eef8'},{id:'sand',v:'#f5ecd8'},{id:'lavender',v:'#ede8f5'},
 ];
 
+const MIN_ZOOM=0.25, MAX_ZOOM=2.0, ZOOM_STEP=0.15;
+
 // ═══════════════════════════════════════════════════════════
-// Iconos SVG custom — stroke fino, lenguaje unificado
+// Icons
 // ═══════════════════════════════════════════════════════════
 const Icon={
   Plus:({className='icon'})=>(<svg className={className} viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" strokeLinecap="round"/></svg>),
@@ -813,16 +535,11 @@ const applyY2K=(canvas,src)=>new Promise(res=>{
 });
 
 // ═══════════════════════════════════════════════════════════
-// Outdoor Background — viewport-fixed, no se mueve con el pan
+// Outdoor Background
 // ═══════════════════════════════════════════════════════════
 function OutdoorBg({isDark}){
   return(
-    <>
-    <svg
-      className="bgsvg"
-      preserveAspectRatio="xMidYMid slice"
-      viewBox="0 0 1200 800"
-    >
+    <svg className="bgsvg" preserveAspectRatio="xMidYMid slice" viewBox="0 0 1200 800">
       <defs>
         <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
           {isDark?<>
@@ -838,7 +555,6 @@ function OutdoorBg({isDark}){
             <stop offset="100%" stopColor="#e2eef5"/>
           </>}
         </linearGradient>
-
         <linearGradient id="horizon" x1="0" y1="0" x2="0" y2="1">
           {isDark?<>
             <stop offset="0%" stopColor="#1a2545" stopOpacity="0"/>
@@ -848,7 +564,6 @@ function OutdoorBg({isDark}){
             <stop offset="100%" stopColor="#f9c896" stopOpacity="0.45"/>
           </>}
         </linearGradient>
-
         <linearGradient id="mtn1" x1="0" y1="0" x2="0" y2="1">
           {isDark?<><stop offset="0%" stopColor="#1c2c44"/><stop offset="100%" stopColor="#0a141e"/></>
                  :<><stop offset="0%" stopColor="#4a7058"/><stop offset="100%" stopColor="#2d4f38"/></>}
@@ -861,7 +576,6 @@ function OutdoorBg({isDark}){
           {isDark?<><stop offset="0%" stopColor="#0a1422"/><stop offset="100%" stopColor="#050a14"/></>
                  :<><stop offset="0%" stopColor="#85a98c"/><stop offset="100%" stopColor="#65876e"/></>}
         </linearGradient>
-
         <radialGradient id="orb-halo">
           {isDark?<>
             <stop offset="0%" stopColor="#f8f4e0" stopOpacity="0.85"/>
@@ -873,10 +587,8 @@ function OutdoorBg({isDark}){
             <stop offset="100%" stopColor="#ffd870" stopOpacity="0"/>
           </>}
         </radialGradient>
-
         <filter id="blur1"><feGaussianBlur stdDeviation="1.5"/></filter>
         <filter id="glow"><feGaussianBlur stdDeviation="6"/></filter>
-
         <linearGradient id="aurora" x1="0" y1="0" x2="1" y2="0">
           <stop offset="0%" stopColor="#3d6a8a" stopOpacity="0"/>
           <stop offset="40%" stopColor="#5a8aa8" stopOpacity="0.18"/>
@@ -884,44 +596,23 @@ function OutdoorBg({isDark}){
           <stop offset="100%" stopColor="#3d6a8a" stopOpacity="0"/>
         </linearGradient>
       </defs>
-
       <rect width="1200" height="800" fill="url(#sky)"/>
       <rect x="0" y="380" width="1200" height="280" fill="url(#horizon)"/>
-
-      {isDark&&(
-        <ellipse cx="600" cy="200" rx="700" ry="80" fill="url(#aurora)" filter="url(#blur1)" opacity="0.6">
-          <animate attributeName="cx" values="500;700;500" dur="40s" repeatCount="indefinite"/>
-        </ellipse>
-      )}
-
-      {/* Estrellas */}
+      {isDark&&<ellipse cx="600" cy="200" rx="700" ry="80" fill="url(#aurora)" filter="url(#blur1)" opacity="0.6"><animate attributeName="cx" values="500;700;500" dur="40s" repeatCount="indefinite"/></ellipse>}
       {isDark&&Array.from({length:120}).map((_,i)=>{
-        const x=(i*97+30)%1200;
-        const y=(i*53)%420;
-        const r=Math.random()*0.6+0.15;
+        const x=(i*97+30)%1200,y=(i*53)%420,r=Math.random()*0.6+0.15;
         return <circle key={'s1-'+i} cx={x} cy={y} r={r} fill="#e8e4f0" opacity={Math.random()*0.5+0.15}/>;
       })}
       {isDark&&Array.from({length:35}).map((_,i)=>{
-        const x=(i*137+70)%1200;
-        const y=(i*73+20)%380;
-        const r=Math.random()*0.8+0.4;
-        const dur=2+(i%4);
-        return (
-          <circle key={'s2-'+i} cx={x} cy={y} r={r} fill="#fffcf0">
-            <animate attributeName="opacity" values="0.3;1;0.3" dur={dur+'s'} repeatCount="indefinite" begin={`${i*0.3}s`}/>
-          </circle>
-        );
+        const x=(i*137+70)%1200,y=(i*73+20)%380,r=Math.random()*0.8+0.4,dur=2+(i%4);
+        return <circle key={'s2-'+i} cx={x} cy={y} r={r} fill="#fffcf0"><animate attributeName="opacity" values="0.3;1;0.3" dur={dur+'s'} repeatCount="indefinite" begin={`${i*0.3}s`}/></circle>;
       })}
       {isDark&&[[180,80],[420,140],[760,90],[1020,160],[280,210]].map(([x,y],i)=>(
         <g key={'s3-'+i}>
           <circle cx={x} cy={y} r="3" fill="#fff8e8" opacity="0.5" filter="url(#glow)"/>
-          <circle cx={x} cy={y} r="0.9" fill="#ffffff">
-            <animate attributeName="opacity" values="0.5;1;0.5" dur="3s" repeatCount="indefinite" begin={`${i*0.6}s`}/>
-          </circle>
+          <circle cx={x} cy={y} r="0.9" fill="#ffffff"><animate attributeName="opacity" values="0.5;1;0.5" dur="3s" repeatCount="indefinite" begin={`${i*0.6}s`}/></circle>
         </g>
       ))}
-
-      {/* Sol o luna */}
       {isDark?(
         <g>
           <circle cx="900" cy="100" r="120" fill="url(#orb-halo)"/>
@@ -937,21 +628,16 @@ function OutdoorBg({isDark}){
           <circle cx="950" cy="110" r="38" fill="#fffce8" opacity="0.6"/>
         </g>
       )}
-
-      {/* Montañas */}
       <polygon points="0,800 0,500 100,420 220,470 360,380 500,440 640,360 780,420 920,360 1060,410 1200,370 1200,800" fill="url(#mtn3)" opacity={isDark?0.55:0.65}/>
       <polygon points="0,800 0,560 100,490 220,540 360,450 500,520 640,420 760,500 900,400 1040,490 1200,440 1200,800" fill="url(#mtn2)"/>
       <polygon points="0,800 0,640 80,590 180,620 300,560 440,610 580,540 720,600 860,530 1000,590 1200,550 1200,800" fill="url(#mtn1)"/>
-
       {[[360,450],[640,420],[900,400],[220,540],[580,540]].map(([x,y],i)=>(
         <polygon key={'snow-'+i} points={`${x},${y} ${x-18},${y+30} ${x+18},${y+30}`} fill={isDark?'#7090a8':'#ffffff'} opacity={isDark?.7:.92}/>
       ))}
-
       {Array.from({length:32}).map((_,i)=>{
         const x=(i*39+8)%1200,y=680+(i%5)*16;
         return <polygon key={'tree-'+i} points={`${x},${y} ${x-7},${y+22} ${x+7},${y+22}`} fill={isDark?'#060c12':'#1a3d22'}/>;
       })}
-
       {isDark&&Array.from({length:32}).map((_,i)=>(
         <circle key={'snowflake-'+i} cx={(i*73+15)%1200} cy="0" r={Math.random()*0.7+0.7} fill="white" opacity={Math.random()*0.4+0.4}>
           <animate attributeName="cy" from="-10" to="810" dur={`${8+(i%6)}s`} repeatCount="indefinite" begin={`${i*.35}s`}/>
@@ -959,12 +645,11 @@ function OutdoorBg({isDark}){
         </circle>
       ))}
     </svg>
-    </>
   );
 }
 
 // ═══════════════════════════════════════════════════════════
-// Draw Sheet Modal
+// Draw Modal
 // ═══════════════════════════════════════════════════════════
 function DrawModal({onSave,onCancel,isDark}){
   const ref=useRef(null);
@@ -1007,16 +692,7 @@ function DrawModal({onSave,onCancel,isDark}){
     else if(tool==='circle'){const rx=Math.abs(p.x-l.x)/2,ry=Math.abs(p.y-l.y)/2;ctx.strokeStyle=color;ctx.lineWidth=sz;ctx.beginPath();ctx.ellipse(l.x+(p.x>l.x?rx:-rx),l.y+(p.y>l.y?ry:-ry),rx,ry,0,0,Math.PI*2);ctx.stroke();}
     drawing.current=false;
   };
-
-  const TOOLS=[
-    {id:'pen',I:Icon.Pencil},
-    {id:'eraser',I:Icon.Eraser},
-    {id:'spray',I:Icon.Spray},
-    {id:'line',I:Icon.Line},
-    {id:'rect',I:Icon.Rect},
-    {id:'circle',I:Icon.Circle},
-  ];
-
+  const TOOLS=[{id:'pen',I:Icon.Pencil},{id:'eraser',I:Icon.Eraser},{id:'spray',I:Icon.Spray},{id:'line',I:Icon.Line},{id:'rect',I:Icon.Rect},{id:'circle',I:Icon.Circle}];
   return(
     <div className="overlay">
       <div className="modal" style={{maxWidth:540}}>
@@ -1027,9 +703,7 @@ function DrawModal({onSave,onCancel,isDark}){
         <div className="dtoolbar">
           <div style={{display:'flex',gap:4}}>
             {TOOLS.map(({id,I})=>(
-              <button key={id} className={`dtool${tool===id?' active':''}`} onClick={()=>setTool(id)}>
-                <I className="icon"/>
-              </button>
+              <button key={id} className={`dtool${tool===id?' active':''}`} onClick={()=>setTool(id)}><I className="icon"/></button>
             ))}
           </div>
           <input type="color" value={color} onChange={e=>setColor(e.target.value)}/>
@@ -1065,7 +739,6 @@ function PostitModal({onSave,onCancel,isDark}){
   const [font,setFont]=useState('caveat');
   const [color,setColor]=useState('cream');
   const light=!isDark;
-
   return(
     <div className="overlay">
       <div className={`modal${light?' light':''}`}>
@@ -1080,9 +753,7 @@ function PostitModal({onSave,onCancel,isDark}){
           <div className="mlabel">Fuente</div>
           <div className="font-row">
             {FONTS.map(f=>(
-              <button key={f.id} className={`fpill${font===f.id?' active':''}`}
-                style={{fontFamily:f.css}}
-                onClick={()=>setFont(f.id)}>{f.label}</button>
+              <button key={f.id} className={`fpill${font===f.id?' active':''}`} style={{fontFamily:f.css}} onClick={()=>setFont(f.id)}>{f.label}</button>
             ))}
           </div>
         </div>
@@ -1090,8 +761,7 @@ function PostitModal({onSave,onCancel,isDark}){
           <div className="mlabel">Color</div>
           <div className="color-row">
             {PCOLORS.map(c=>(
-              <button key={c.id} className={`cdot${color===c.id?' active':''}`} onClick={()=>setColor(c.id)}
-                style={{background:c.v}}/>
+              <button key={c.id} className={`cdot${color===c.id?' active':''}`} onClick={()=>setColor(c.id)} style={{background:c.v}}/>
             ))}
           </div>
         </div>
@@ -1105,9 +775,9 @@ function PostitModal({onSave,onCancel,isDark}){
 }
 
 // ═══════════════════════════════════════════════════════════
-// Board Element — coordenadas en píxeles reales del canvas
+// Board Element
 // ═══════════════════════════════════════════════════════════
-function BoardEl({el,myId,onMove,onDelete,onUpdateCaption,onPress,scale,onDragActive}){
+function BoardEl({el,onMove,onDelete,onUpdateCaption,onPress,scale}){
   const elRef=useRef(null);
   const dragStart=useRef(null);
   const resizeStart=useRef(null);
@@ -1118,7 +788,6 @@ function BoardEl({el,myId,onMove,onDelete,onUpdateCaption,onPress,scale,onDragAc
     e.preventDefault();
     e.stopPropagation();
     onPress&&onPress(el.id);
-    onDragActive&&onDragActive(true);
     const s=e.touches?e.touches[0]:e;
     dragStart.current={mx:s.clientX,my:s.clientY,ex:el.x,ey:el.y};
     const move=ev=>{
@@ -1129,13 +798,12 @@ function BoardEl({el,myId,onMove,onDelete,onUpdateCaption,onPress,scale,onDragAc
       onMove(el.id,Math.round(dragStart.current.ex+dx),Math.round(dragStart.current.ey+dy));
     };
     const up=()=>{
-      onDragActive&&onDragActive(false);
       document.removeEventListener('mousemove',move);document.removeEventListener('mouseup',up);
       document.removeEventListener('touchmove',move);document.removeEventListener('touchend',up);
     };
     document.addEventListener('mousemove',move);document.addEventListener('mouseup',up);
     document.addEventListener('touchmove',move,{passive:false});document.addEventListener('touchend',up);
-  },[el,onMove,scale,onPress,onDragActive]);
+  },[el,onMove,scale,onPress]);
 
   const startResize=useCallback((e)=>{
     e.preventDefault();e.stopPropagation();
@@ -1161,20 +829,17 @@ function BoardEl({el,myId,onMove,onDelete,onUpdateCaption,onPress,scale,onDragAc
   if(el.type==='postit'){
     const nc=PCOLORS.find(c=>c.id===el.color)||PCOLORS[0];
     const font=FONTS.find(f=>f.id===el.font)||FONTS[4];
-    const w=el.w||220,h=el.h||null;
+    const w=el.w||220;
     return(
       <div ref={elRef} className="board-el el-in" style={style}
         onMouseDown={startDrag} onTouchStart={startDrag}>
         <button className="del-btn" onClick={()=>onDelete(el.id)}><Icon.X className="icon-sm"/></button>
-        <div className="postit" style={{background:nc.v,fontFamily:font.css,width:w,height:h||'auto',overflow:'hidden'}}>
+        <div className="postit" style={{background:nc.v,fontFamily:font.css,width:w,height:el.h||'auto',overflow:'hidden'}}>
           <div className="postit-author">— {el.author_name}</div>
-          <div className="postit-text" style={{fontSize:el.font==='caveat'?'1.15rem':'13.5px',fontStyle:['cormorant','lora'].includes(el.font)?'italic':'normal'}}>
-            {el.content}
-          </div>
+          <div className="postit-text" style={{fontSize:el.font==='caveat'?'1.15rem':'13.5px',fontStyle:['cormorant','lora'].includes(el.font)?'italic':'normal'}}>{el.content}</div>
           <div className="postit-time">{new Date(el.created_at).toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'})}</div>
         </div>
-        <div className="resize-handle" onMouseDown={startResize} onTouchStart={startResize}
-          style={{color:'rgba(0,0,0,.4)'}}/>
+        <div className="resize-handle" onMouseDown={startResize} onTouchStart={startResize} style={{color:'rgba(0,0,0,.4)'}}/>
       </div>
     );
   }
@@ -1190,8 +855,7 @@ function BoardEl({el,myId,onMove,onDelete,onUpdateCaption,onPress,scale,onDragAc
           <img src={el.content} alt="" style={{objectFit:'contain'}}/>
           <div className="sketch-time">{new Date(el.created_at).toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'})}</div>
         </div>
-        <div className="resize-handle" onMouseDown={startResize} onTouchStart={startResize}
-          style={{color:'rgba(0,0,0,.4)'}}/>
+        <div className="resize-handle" onMouseDown={startResize} onTouchStart={startResize} style={{color:'rgba(0,0,0,.4)'}}/>
       </div>
     );
   }
@@ -1213,8 +877,7 @@ function BoardEl({el,myId,onMove,onDelete,onUpdateCaption,onPress,scale,onDragAc
             <div className="polaroid-meta">{el.author_name} · {new Date(el.created_at).toLocaleDateString('es',{day:'numeric',month:'short'})}</div>
           </div>
         </div>
-        <div className="resize-handle" onMouseDown={startResize} onTouchStart={startResize}
-          style={{color:'rgba(0,0,0,.3)'}}/>
+        <div className="resize-handle" onMouseDown={startResize} onTouchStart={startResize} style={{color:'rgba(0,0,0,.3)'}}/>
       </div>
     );
   }
@@ -1302,10 +965,8 @@ function Onboarding({onDone}){
 }
 
 // ═══════════════════════════════════════════════════════════
-// Main App — canvas navegable
+// App
 // ═══════════════════════════════════════════════════════════
-const MIN_ZOOM=0.25, MAX_ZOOM=2.0, ZOOM_STEP=0.15;
-
 function App(){
   const [session,setSession]=useState(null);
   const [elements,setElements]=useState([]);
@@ -1318,40 +979,24 @@ function App(){
   const [showInvite,setShowInvite]=useState(false);
   const [inviteUrl,setInviteUrl]=useState('');
   const [isFullscreen,setIsFullscreen]=useState(false);
-
-  // Viewport: tx/ty es el offset del canvas-world dentro del viewport, scale es zoom
-  const [viewport,setViewport]=useState(()=>{
-    const saved=ls.get('viewport_'+ls.get('roomId'));
-    return saved||{tx:0,ty:0,scale:1};
-  });
   const [isPanning,setIsPanning]=useState(false);
-  const [spaceDown,setSpaceDown]=useState(false);
+  // zoomPct es solo para mostrar en UI — el motor gestiona el estado real
+  const [zoomPct,setZoomPct]=useState(100);
 
   const viewportRef=useRef(null);
+  const worldRef=useRef(null);
   const fileRef=useRef(null);
   const filterCanvas=useRef(document.createElement('canvas'));
+  // Estado del motor: tx, ty, scale viven aquí (mutable, no React)
+  const G=useRef({tx:0,ty:0,scale:1});
+
   const dark=manual?manual==='night':isDark;
-  const viewportRefState=useRef(viewport);
-  useEffect(()=>{viewportRefState.current=viewport;},[viewport]);
 
-  const toggleFullscreen=async()=>{
-    try{
-      if(!document.fullscreenElement&&!document.webkitFullscreenElement){
-        const el=document.documentElement;
-        if(el.requestFullscreen)await el.requestFullscreen();
-        else if(el.webkitRequestFullscreen)await el.webkitRequestFullscreen();
-      }else{
-        if(document.exitFullscreen)await document.exitFullscreen();
-        else if(document.webkitExitFullscreen)await document.webkitExitFullscreen();
-      }
-    }catch(e){console.warn('Fullscreen error:',e);}
-  };
-
+  // Cargar sesión de localStorage
   useEffect(()=>{
-    const onFs=()=>setIsFullscreen(!!(document.fullscreenElement||document.webkitFullscreenElement));
-    document.addEventListener('fullscreenchange',onFs);
-    document.addEventListener('webkitfullscreenchange',onFs);
-    return()=>{document.removeEventListener('fullscreenchange',onFs);document.removeEventListener('webkitfullscreenchange',onFs);};
+    const s={userId:ls.get('userId'),userName:ls.get('userName'),roomId:ls.get('roomId')};
+    if(s.userId&&s.roomId)setSession(s);
+    else setReady(true);
   },[]);
 
   useEffect(()=>{
@@ -1360,222 +1005,145 @@ function App(){
   },[]);
 
   useEffect(()=>{
-    const s={userId:ls.get('userId'),userName:ls.get('userName'),roomId:ls.get('roomId')};
-    if(s.userId&&s.roomId)setSession(s);
-    else setReady(true);
+    const onFs=()=>setIsFullscreen(!!(document.fullscreenElement||document.webkitFullscreenElement));
+    document.addEventListener('fullscreenchange',onFs);
+    document.addEventListener('webkitfullscreenchange',onFs);
+    return()=>{document.removeEventListener('fullscreenchange',onFs);document.removeEventListener('webkitfullscreenchange',onFs);};
   },[]);
 
-  // Persistir viewport por sala con throttle
+  // ── Motor de gestos ─────────────────────────────────────
+  // Corre cuando session cambia (i.e., cuando la UI del tablón se monta).
+  // Accede al DOM directamente — sin closures stale, sin setViewport durante el gesto.
   useEffect(()=>{
     if(!session)return;
-    const t=setTimeout(()=>{
-      ls.set('viewport_'+session.roomId,viewport);
-    },300);
-    return()=>clearTimeout(t);
-  },[viewport,session]);
+    const vp=viewportRef.current;
+    const w=worldRef.current;
+    if(!vp||!w)return;
 
-  // Cargar viewport guardado al iniciar sesión
-  useEffect(()=>{
-    if(!session)return;
+    // Restaurar viewport guardado
     const saved=ls.get('viewport_'+session.roomId);
     if(saved&&typeof saved.scale==='number'){
-      setViewport(saved);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[session?.roomId]);
-
-  // Space key para pan en desktop
-  useEffect(()=>{
-    const down=(e)=>{
-      if(e.code==='Space'&&!e.repeat&&document.activeElement?.tagName!=='INPUT'&&document.activeElement?.tagName!=='TEXTAREA'){
-        e.preventDefault();setSpaceDown(true);
-      }
-    };
-    const up=(e)=>{if(e.code==='Space'){setSpaceDown(false);}};
-    window.addEventListener('keydown',down);
-    window.addEventListener('keyup',up);
-    return()=>{window.removeEventListener('keydown',down);window.removeEventListener('keyup',up);};
-  },[]);
-
-  // Cargar elementos del día actual
-  useEffect(()=>{
-    if(!session)return;
-    const loadElements=()=>{
-      sb.from('murmur_notes')
-        .select('*')
-        .eq('room_id',session.roomId)
-        .gte('created_at',currentDay+'T00:00:00')
-        .lte('created_at',currentDay+'T23:59:59')
-        .then(({data})=>{
-          if(data){
-            // Migración: si las coordenadas están en rango 0-1000 (viejas normalizadas),
-            // convertirlas a píxeles centrados. Si ya son píxeles reales (pueden ser negativas), dejarlas.
-            const migrated=data.map(el=>{
-              if(el.x>=0&&el.x<=1000&&el.y>=0&&el.y<=1000&&!el._migrated){
-                // Convertir 0-1000 normalizado a px centrado en (0,0)
-                // 500,400 era el centro original — eso ahora es (0,0)
-                return{...el,x:Math.round((el.x-500)*1.6),y:Math.round((el.y-400)*1.6)};
-              }
-              return el;
-            });
-            setElements(migrated);
-          }
-          setReady(true);
-        });
-    };
-    loadElements();
-    const pollInterval=setInterval(loadElements,4000);
-
-    const ch=sb.channel('board_'+session.roomId+'_'+currentDay)
-      .on('postgres_changes',{event:'INSERT',schema:'public',table:'murmur_notes',filter:`room_id=eq.${session.roomId}`},
-        p=>{if(p.new.created_at?.startsWith(currentDay))setElements(prev=>prev.find(e=>e.id===p.new.id)?prev:[...prev,p.new]);})
-      .on('postgres_changes',{event:'UPDATE',schema:'public',table:'murmur_notes',filter:`room_id=eq.${session.roomId}`},
-        p=>{if(p.new.created_at?.startsWith(currentDay))setElements(prev=>prev.map(e=>e.id===p.new.id?p.new:e));})
-      .on('postgres_changes',{event:'DELETE',schema:'public',table:'murmur_notes',filter:`room_id=eq.${session.roomId}`},
-        p=>{setElements(prev=>prev.filter(e=>e.id!==p.old.id));})
-      .subscribe();
-    return()=>{clearInterval(pollInterval);sb.removeChannel(ch);};
-  },[session,currentDay]);
-
-  // ═══════════════════════════════════════════════════════════
-  // Pan & Zoom — motor con refs puros, sin closures stale
-  // ═══════════════════════════════════════════════════════════
-  const draggingEl=useRef(false);
-  const elDragActive=useCallback((v)=>{draggingEl.current=v;},[]);
-  const worldRef=useRef(null); // ref al div canvas-world para moverlo directo
-
-  // Motor de gestos — manipula el DOM durante el gesto, React state solo al soltar
-  useEffect(()=>{
-    const vp=viewportRef.current;if(!vp)return;
-    // Estado mutable local — no React, no closures stale
-    const s={
-      tx:0,ty:0,scale:1,   // estado actual del canvas
-      panning:false,pinching:false,
-      startCx:0,startCy:0, // posición del cursor/dedo al inicio del gesto
-      startTx:0,startTy:0, // tx/ty al inicio del gesto
-      pinchDist:0,pinchCx:0,pinchCy:0,pinchTx:0,pinchTy:0,pinchScale:1,
-    };
-
-    // Leer viewport inicial desde localStorage si existe
-    const saved=ls.get('viewport_'+ls.get('roomId'));
-    if(saved&&typeof saved.scale==='number'){
-      s.tx=saved.tx||0;s.ty=saved.ty||0;s.scale=saved.scale||1;
+      G.current.tx=saved.tx||0;
+      G.current.ty=saved.ty||0;
+      G.current.scale=saved.scale||1;
     }
 
-    const applyTransform=()=>{
-      const w=worldRef.current;if(!w)return;
-      w.style.transform=`translate(${s.tx}px,${s.ty}px) scale(${s.scale})`;
+    const applyT=()=>{
+      w.style.transform=`translate(${G.current.tx}px,${G.current.ty}px) scale(${G.current.scale})`;
     };
-
-    const commitToReact=()=>{
-      const next={tx:s.tx,ty:s.ty,scale:s.scale};
-      viewportRefState.current=next;
-      setViewport(next);
-      ls.set('viewport_'+ls.get('roomId'),next);
+    const commit=()=>{
+      ls.set('viewport_'+session.roomId,{...G.current});
+      setZoomPct(Math.round(G.current.scale*100));
     };
 
     // Aplicar estado inicial
-    applyTransform();
+    applyT();
+    setZoomPct(Math.round(G.current.scale*100));
+
+    // Estado local del gesto (completamente mutable)
+    let panning=false,pinching=false;
+    let startCx=0,startCy=0,startTx=0,startTy=0;
+    let pinchDist=0,pinchCx=0,pinchCy=0,pinchTx=0,pinchTy=0,pinchScale=1;
 
     // ── Wheel ──
     const onWheel=(e)=>{
       e.preventDefault();
       const delta=-e.deltaY*(e.deltaMode===1?0.05:0.0012);
-      const ns=Math.max(MIN_ZOOM,Math.min(MAX_ZOOM,s.scale*(1+delta)));
-      if(Math.abs(ns-s.scale)<0.001)return;
+      const ns=Math.max(MIN_ZOOM,Math.min(MAX_ZOOM,G.current.scale*(1+delta)));
+      if(Math.abs(ns-G.current.scale)<0.001)return;
       const r=vp.getBoundingClientRect();
       const cx=e.clientX-r.left-r.width/2;
       const cy=e.clientY-r.top-r.height/2;
-      const ratio=ns/s.scale;
-      s.tx=cx-(cx-s.tx)*ratio;
-      s.ty=cy-(cy-s.ty)*ratio;
-      s.scale=ns;
-      applyTransform();
-      commitToReact();
+      const ratio=ns/G.current.scale;
+      G.current.tx=cx-(cx-G.current.tx)*ratio;
+      G.current.ty=cy-(cy-G.current.ty)*ratio;
+      G.current.scale=ns;
+      applyT();
+      commit();
     };
 
     // ── Mouse ──
     const onMouseDown=(e)=>{
-      if(draggingEl.current)return;
       if(e.button!==0&&e.button!==1)return;
-      if(e.button===0&&!!e.target.closest('.board-el'))return;
+      if(e.button===0&&e.target.closest('.board-el'))return;
       e.preventDefault();
-      s.panning=true;
-      s.startCx=e.clientX;s.startCy=e.clientY;
-      s.startTx=s.tx;s.startTy=s.ty;
+      panning=true;
+      startCx=e.clientX;startCy=e.clientY;
+      startTx=G.current.tx;startTy=G.current.ty;
       setIsPanning(true);
     };
     const onMouseMove=(e)=>{
-      if(!s.panning||draggingEl.current)return;
-      s.tx=s.startTx+(e.clientX-s.startCx);
-      s.ty=s.startTy+(e.clientY-s.startCy);
-      applyTransform();
+      if(!panning)return;
+      G.current.tx=startTx+(e.clientX-startCx);
+      G.current.ty=startTy+(e.clientY-startCy);
+      applyT();
     };
     const onMouseUp=()=>{
-      if(!s.panning)return;
-      s.panning=false;
+      if(!panning)return;
+      panning=false;
       setIsPanning(false);
-      commitToReact();
+      commit();
     };
 
     // ── Touch ──
     const onTouchStart=(e)=>{
       if(e.touches.length===2){
-        // Pinch — siempre, incluso sobre elementos
         e.preventDefault();
-        s.pinching=true;s.panning=false;
+        pinching=true;panning=false;
         const t1=e.touches[0],t2=e.touches[1];
-        s.pinchDist=Math.hypot(t2.clientX-t1.clientX,t2.clientY-t1.clientY);
-        s.pinchCx=(t1.clientX+t2.clientX)/2;
-        s.pinchCy=(t1.clientY+t2.clientY)/2;
-        s.pinchTx=s.tx;s.pinchTy=s.ty;s.pinchScale=s.scale;
+        pinchDist=Math.hypot(t2.clientX-t1.clientX,t2.clientY-t1.clientY);
+        pinchCx=(t1.clientX+t2.clientX)/2;
+        pinchCy=(t1.clientY+t2.clientY)/2;
+        pinchTx=G.current.tx;pinchTy=G.current.ty;pinchScale=G.current.scale;
         return;
       }
-      if(e.touches.length===1&&!draggingEl.current){
+      // 1 dedo: panear solo si tocó el fondo (no un elemento)
+      if(e.touches.length===1&&!e.target.closest('.board-el')){
         e.preventDefault();
-        s.panning=true;
-        s.startCx=e.touches[0].clientX;s.startCy=e.touches[0].clientY;
-        s.startTx=s.tx;s.startTy=s.ty;
+        panning=true;
+        startCx=e.touches[0].clientX;startCy=e.touches[0].clientY;
+        startTx=G.current.tx;startTy=G.current.ty;
         setIsPanning(true);
       }
     };
     const onTouchMove=(e)=>{
-      if(s.pinching&&e.touches.length===2){
+      if(pinching&&e.touches.length===2){
         e.preventDefault();
         const t1=e.touches[0],t2=e.touches[1];
         const dist=Math.hypot(t2.clientX-t1.clientX,t2.clientY-t1.clientY);
         const cx=(t1.clientX+t2.clientX)/2,cy=(t1.clientY+t2.clientY)/2;
-        const ns=Math.max(MIN_ZOOM,Math.min(MAX_ZOOM,s.pinchScale*(dist/s.pinchDist)));
+        const ns=Math.max(MIN_ZOOM,Math.min(MAX_ZOOM,pinchScale*(dist/pinchDist)));
         const r=vp.getBoundingClientRect();
-        const px=s.pinchCx-r.left-r.width/2,py=s.pinchCy-r.top-r.height/2;
-        const ratio=ns/s.pinchScale;
-        s.tx=px-(px-s.pinchTx)*ratio+(cx-s.pinchCx);
-        s.ty=py-(py-s.pinchTy)*ratio+(cy-s.pinchCy);
-        s.scale=ns;
-        applyTransform();
+        const px=pinchCx-r.left-r.width/2,py=pinchCy-r.top-r.height/2;
+        const ratio=ns/pinchScale;
+        G.current.tx=px-(px-pinchTx)*ratio+(cx-pinchCx);
+        G.current.ty=py-(py-pinchTy)*ratio+(cy-pinchCy);
+        G.current.scale=ns;
+        applyT();
         return;
       }
-      if(s.panning&&!draggingEl.current&&e.touches.length===1){
+      if(panning&&e.touches.length===1){
         e.preventDefault();
-        s.tx=s.startTx+(e.touches[0].clientX-s.startCx);
-        s.ty=s.startTy+(e.touches[0].clientY-s.startCy);
-        applyTransform();
+        G.current.tx=startTx+(e.touches[0].clientX-startCx);
+        G.current.ty=startTy+(e.touches[0].clientY-startCy);
+        applyT();
       }
     };
     const onTouchEnd=(e)=>{
-      if(s.pinching&&(!e.touches||e.touches.length<2)){
-        s.pinching=false;
-        commitToReact();
+      if(pinching&&(!e.touches||e.touches.length<2)){
+        pinching=false;
+        commit();
         if(e.touches&&e.touches.length===1){
-          s.panning=true;
-          s.startCx=e.touches[0].clientX;s.startCy=e.touches[0].clientY;
-          s.startTx=s.tx;s.startTy=s.ty;
+          panning=true;
+          startCx=e.touches[0].clientX;startCy=e.touches[0].clientY;
+          startTx=G.current.tx;startTy=G.current.ty;
           return;
         }
       }
-      if(s.panning&&(!e.touches||e.touches.length===0)){
-        s.panning=false;setIsPanning(false);
-        commitToReact();
+      if(panning&&(!e.touches||e.touches.length===0)){
+        panning=false;
+        setIsPanning(false);
+        commit();
       }
     };
 
@@ -1586,6 +1154,7 @@ function App(){
     document.addEventListener('mouseup',onMouseUp);
     document.addEventListener('touchmove',onTouchMove,{passive:false});
     document.addEventListener('touchend',onTouchEnd);
+
     return()=>{
       vp.removeEventListener('wheel',onWheel);
       vp.removeEventListener('mousedown',onMouseDown);
@@ -1595,39 +1164,58 @@ function App(){
       document.removeEventListener('touchmove',onTouchMove);
       document.removeEventListener('touchend',onTouchEnd);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[]);
+  },[session]);
 
+  // Zoom UI buttons — escriben al DOM y al G.current directamente
   const applyAndCommit=(tx,ty,scale)=>{
-    const w=worldRef.current;
-    if(w)w.style.transform=`translate(${tx}px,${ty}px) scale(${scale})`;
-    const next={tx,ty,scale};
-    viewportRefState.current=next;
-    setViewport(next);
-    ls.set('viewport_'+session?.roomId,next);
+    const w=worldRef.current;if(!w)return;
+    G.current.tx=tx;G.current.ty=ty;G.current.scale=scale;
+    w.style.transform=`translate(${tx}px,${ty}px) scale(${scale})`;
+    ls.set('viewport_'+(session?.roomId||''),{tx,ty,scale});
+    setZoomPct(Math.round(scale*100));
   };
-  const zoomIn=()=>{
-    const vp=viewportRefState.current;
-    const ns=Math.min(MAX_ZOOM,vp.scale*(1+ZOOM_STEP));
-    applyAndCommit(vp.tx,vp.ty,ns);
-  };
-  const zoomOut=()=>{
-    const vp=viewportRefState.current;
-    const ns=Math.max(MIN_ZOOM,vp.scale*(1-ZOOM_STEP));
-    applyAndCommit(vp.tx,vp.ty,ns);
-  };
+  const zoomIn=()=>applyAndCommit(G.current.tx,G.current.ty,Math.min(MAX_ZOOM,G.current.scale*(1+ZOOM_STEP)));
+  const zoomOut=()=>applyAndCommit(G.current.tx,G.current.ty,Math.max(MIN_ZOOM,G.current.scale*(1-ZOOM_STEP)));
   const centerView=()=>applyAndCommit(0,0,1);
 
-  // ═══════════════════════════════════════════════════════════
-  // Element actions
-  // ═══════════════════════════════════════════════════════════
+  // Cargar elementos del día
+  useEffect(()=>{
+    if(!session)return;
+    const load=()=>{
+      sb.from('murmur_notes')
+        .select('*').eq('room_id',session.roomId)
+        .gte('created_at',currentDay+'T00:00:00').lte('created_at',currentDay+'T23:59:59')
+        .then(({data})=>{
+          if(data){
+            const migrated=data.map(el=>{
+              if(el.x>=0&&el.x<=1000&&el.y>=0&&el.y<=1000){
+                return{...el,x:Math.round((el.x-500)*1.6),y:Math.round((el.y-400)*1.6)};
+              }
+              return el;
+            });
+            setElements(migrated);
+          }
+          setReady(true);
+        });
+    };
+    load();
+    const poll=setInterval(load,4000);
+    const ch=sb.channel('board_'+session.roomId+'_'+currentDay)
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'murmur_notes',filter:`room_id=eq.${session.roomId}`},
+        p=>{if(p.new.created_at?.startsWith(currentDay))setElements(prev=>prev.find(e=>e.id===p.new.id)?prev:[...prev,p.new]);})
+      .on('postgres_changes',{event:'UPDATE',schema:'public',table:'murmur_notes',filter:`room_id=eq.${session.roomId}`},
+        p=>{if(p.new.created_at?.startsWith(currentDay))setElements(prev=>prev.map(e=>e.id===p.new.id?p.new:e));})
+      .on('postgres_changes',{event:'DELETE',schema:'public',table:'murmur_notes',filter:`room_id=eq.${session.roomId}`},
+        p=>{setElements(prev=>prev.filter(e=>e.id!==p.old.id));})
+      .subscribe();
+    return()=>{clearInterval(poll);sb.removeChannel(ch);};
+  },[session,currentDay]);
 
+  // Element actions
   const addElement=async(data)=>{
     if(!session)return;
-    // Posición: en el centro del viewport actual del usuario, en world coords
-    const vp=viewportRefState.current;
-    const wx=Math.round(-vp.tx/vp.scale);
-    const wy=Math.round(-vp.ty/vp.scale);
+    const wx=Math.round(-G.current.tx/G.current.scale);
+    const wy=Math.round(-G.current.ty/G.current.scale);
     const jitter=80;
     const el={
       room_id:session.roomId,author_id:session.userId,author_name:session.userName,
@@ -1646,7 +1234,6 @@ function App(){
   },[]);
 
   const pressElement=useCallback(async(id)=>{
-    // Bring to front (z-index = now)
     const z=Date.now();
     setElements(prev=>prev.map(e=>e.id===id?{...e,z}:e));
     sb.from('murmur_notes').update({z}).eq('id',id);
@@ -1682,36 +1269,47 @@ function App(){
     try{await navigator.clipboard.writeText(url);}catch{}
   };
 
+  const toggleFullscreen=async()=>{
+    try{
+      if(!document.fullscreenElement&&!document.webkitFullscreenElement){
+        const el=document.documentElement;
+        if(el.requestFullscreen)await el.requestFullscreen();
+        else if(el.webkitRequestFullscreen)await el.webkitRequestFullscreen();
+      }else{
+        if(document.exitFullscreen)await document.exitFullscreen();
+        else if(document.webkitExitFullscreen)await document.webkitExitFullscreen();
+      }
+    }catch(e){}
+  };
+
+  // ── Render ──────────────────────────────────────────────
   if(!ready&&!session)return null;
   if(!session)return <Onboarding onDone={s=>setSession(s)}/>;
 
   const isToday=currentDay===todayStr();
   const lightCls=dark?'':' light';
-  const zoomPct=Math.round(viewport.scale*100);
 
   return(
     <div className="board" data-light={!dark} style={{background:dark?'#03050a':'#cae5f0'}}>
       <OutdoorBg isDark={dark}/>
 
-      {/* Invite modal */}
+      {/* Modals */}
       {showInvite&&(
         <div className="overlay">
-          <div className="modal">
+          <div className={`modal${dark?'':' light'}`}>
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
               <h3>Compartí el tablón</h3>
               <button className="modal-close" onClick={()=>setShowInvite(false)}><Icon.X/></button>
             </div>
-            <p style={{fontFamily:"'Cormorant Garamond',serif",fontStyle:'italic',fontSize:14,color:'rgba(232,232,236,.55)',letterSpacing:'.01em'}}>
+            <p style={{fontFamily:"'Cormorant Garamond',serif",fontStyle:'italic',fontSize:14,color:dark?'rgba(232,232,236,.55)':'rgba(20,30,50,.55)',letterSpacing:'.01em'}}>
               Enviá este link. Solo hace falta abrirlo y elegir un apodo.
             </p>
             <div className="iurl">{inviteUrl}</div>
-            <p style={{fontFamily:"'DM Mono',monospace",fontSize:10,color:'rgba(232,232,236,.4)',textAlign:'center',letterSpacing:'.05em'}}>copiado al portapapeles ✓</p>
-            <button className="mbtn primary" onClick={()=>setShowInvite(false)}>listo</button>
+            <p style={{fontFamily:"'DM Mono',monospace",fontSize:10,color:dark?'rgba(232,232,236,.4)':'rgba(20,30,50,.4)',textAlign:'center',letterSpacing:'.05em'}}>copiado al portapapeles ✓</p>
+            <button className={`mbtn primary${dark?'':' light'}`} onClick={()=>setShowInvite(false)}>listo</button>
           </div>
         </div>
       )}
-
-      {/* Modals */}
       {showPostit&&<PostitModal isDark={dark} onCancel={()=>setShowPostit(false)}
         onSave={async d=>{await addElement({type:'postit',content:d.text,font:d.font,color:d.color});setShowPostit(false);}}/>}
       {showDraw&&<DrawModal isDark={dark} onCancel={()=>setShowDraw(false)}
@@ -1721,44 +1319,38 @@ function App(){
       <div className="header">
         <div className="header-mark"><Icon.Logo className="header-mark-svg"/></div>
         <div className="header-actions">
-          <button className={`hbtn${lightCls}`} onClick={toggleFullscreen} title="Pantalla completa">
+          <button className={`hbtn${lightCls}`} onClick={toggleFullscreen}>
             {isFullscreen?<Icon.Minimize/>:<Icon.Maximize/>}
           </button>
           <div className={`hbtn-group${lightCls}`}>
-            <button className={`hbtn${manual==='day'?' active':''}${lightCls}`} onClick={()=>setManual(manual==='day'?null:'day')} title="Día"><Icon.Sun/></button>
-            <button className={`hbtn${manual==='night'?' active':''}${lightCls}`} onClick={()=>setManual(manual==='night'?null:'night')} title="Noche"><Icon.Moon/></button>
+            <button className={`hbtn${manual==='day'?' active':''}${lightCls}`} onClick={()=>setManual(manual==='day'?null:'day')}><Icon.Sun/></button>
+            <button className={`hbtn${manual==='night'?' active':''}${lightCls}`} onClick={()=>setManual(manual==='night'?null:'night')}><Icon.Moon/></button>
           </div>
           <button className={`hbtn${lightCls}`} onClick={getInvite}><Icon.Plus className="icon-sm"/>invitar</button>
         </div>
       </div>
 
-      {/* Day navigator */}
+      {/* Daynav */}
       <div className={`daynav${lightCls}`}>
         <button onClick={()=>changeDay(-1)}><Icon.ChevronLeft className="icon-sm"/></button>
         <span className="day-label">{currentDay===todayStr()?'hoy':fmtDate(currentDay)}</span>
         <button onClick={()=>changeDay(1)} disabled={isToday}><Icon.ChevronRight className="icon-sm"/></button>
       </div>
 
-      {/* Canvas viewport - el contenedor que captura gestos */}
+      {/* Canvas */}
       <div
         ref={viewportRef}
-        className={`canvas-viewport${isPanning?' panning':''}${spaceDown?' spacing':''}`}
+        className={`canvas-viewport${isPanning?' panning':''}`}
       >
-        {/* Canvas world - transformado directo por el motor de gestos */}
-        <div
-          ref={worldRef}
-          className="canvas-world"
-          style={{transform:`translate(${viewport.tx}px,${viewport.ty}px) scale(${viewport.scale})`}}
-        >
+        <div ref={worldRef} className="canvas-world">
           {elements.map(el=>(
-            <BoardEl key={el.id} el={el} myId={session.userId}
+            <BoardEl key={el.id} el={el}
               onMove={moveElement} onDelete={deleteElement}
               onUpdateCaption={updateCaption} onPress={pressElement}
-              scale={viewport.scale} onDragActive={elDragActive}/>
+              scale={G.current.scale}/>
           ))}
         </div>
 
-        {/* Empty state — fixed in viewport, no en world */}
         {elements.length===0&&ready&&(
           <div className="empty-state">
             <div className="empty-mark">
@@ -1779,19 +1371,19 @@ function App(){
         </svg>
       </button>
 
-      {/* Zoom indicator */}
+      {/* Zoom */}
       <div className={`zoom-indicator${lightCls}`}>
-        <button onClick={zoomOut} title="Zoom out"><Icon.X className="icon-sm" style={{transform:'rotate(45deg)'}}/></button>
+        <button onClick={zoomOut}><Icon.X className="icon-sm" style={{transform:'rotate(45deg)'}}/></button>
         <span className="zoom-value">{zoomPct}%</span>
-        <button onClick={zoomIn} title="Zoom in"><Icon.Plus className="icon-sm"/></button>
+        <button onClick={zoomIn}><Icon.Plus className="icon-sm"/></button>
       </div>
 
       {/* Toolbar */}
       <div className={`toolbar${lightCls}`}>
         <span className="tbtn-label">añadir</span>
-        <button className="tbtn" title="Post-it" onClick={()=>setShowPostit(true)}><Icon.Note/></button>
-        <button className="tbtn" title="Dibujo" onClick={()=>setShowDraw(true)}><Icon.Pencil/></button>
-        <button className="tbtn" title="Foto polaroid" onClick={()=>fileRef.current?.click()}><Icon.Camera/></button>
+        <button className="tbtn" onClick={()=>setShowPostit(true)}><Icon.Note/></button>
+        <button className="tbtn" onClick={()=>setShowDraw(true)}><Icon.Pencil/></button>
+        <button className="tbtn" onClick={()=>fileRef.current?.click()}><Icon.Camera/></button>
         <input ref={fileRef} type="file" accept="image/*" style={{display:'none'}} onChange={handlePhoto}/>
       </div>
     </div>
