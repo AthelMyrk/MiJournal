@@ -460,6 +460,18 @@ const PCOLORS=[
   {id:'cream',v:'#fefcf0'},{id:'rose',v:'#fde8e4'},{id:'sage',v:'#e8f2e8'},
   {id:'sky',v:'#e4eef8'},{id:'sand',v:'#f5ecd8'},{id:'lavender',v:'#ede8f5'},
 ];
+// Grupos de color para el modal de postit
+const COLOR_GROUPS={
+  pastel:['#fefcf0','#fde8e4','#e8f2e8','#e4eef8','#f5ecd8','#ede8f5'],
+  vivos: ['#f87171','#fb923c','#facc15','#4ade80','#60a5fa','#c084fc'],
+};
+// Luminance para elegir texto oscuro o claro
+const luminance=hex=>{
+  const r=parseInt(hex.slice(1,3),16)/255;
+  const g=parseInt(hex.slice(3,5),16)/255;
+  const b=parseInt(hex.slice(5,7),16)/255;
+  return .299*r+.587*g+.114*b;
+};
 
 const MIN_ZOOM=0.25, MAX_ZOOM=2.0, ZOOM_STEP=0.15;
 
@@ -737,8 +749,28 @@ function DrawModal({onSave,onCancel,isDark}){
 function PostitModal({onSave,onCancel,isDark}){
   const [text,setText]=useState('');
   const [font,setFont]=useState('caveat');
-  const [color,setColor]=useState('cream');
+  const [group,setGroup]=useState('pastel');       // 'pastel' | 'vivos' | 'custom'
+  const [color,setColor]=useState('#fefcf0');       // siempre hex
+  const [customColor,setCustomColor]=useState('#ffd6e0');
   const light=!isDark;
+
+  const pickGroup=(g)=>{
+    setGroup(g);
+    if(g!=='custom') setColor(COLOR_GROUPS[g][0]);
+  };
+
+  const tabStyle=(g)=>({
+    padding:'4px 12px',borderRadius:9,border:'none',cursor:'pointer',
+    fontSize:11,fontFamily:'inherit',fontWeight:500,letterSpacing:'.02em',
+    transition:'all .2s',
+    background: group===g
+      ? (light?'rgba(20,30,50,.12)':'rgba(255,255,255,.18)')
+      : 'transparent',
+    color: group===g
+      ? (light?'rgba(20,30,50,.9)':'rgba(232,232,236,.92)')
+      : (light?'rgba(20,30,50,.45)':'rgba(232,232,236,.45)'),
+  });
+
   return(
     <div className="overlay">
       <div className={`modal${light?' light':''}`}>
@@ -758,12 +790,56 @@ function PostitModal({onSave,onCancel,isDark}){
           </div>
         </div>
         <div>
-          <div className="mlabel">Color</div>
-          <div className="color-row">
-            {PCOLORS.map(c=>(
-              <button key={c.id} className={`cdot${color===c.id?' active':''}`} onClick={()=>setColor(c.id)} style={{background:c.v}}/>
-            ))}
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
+            <span className="mlabel" style={{marginBottom:0}}>Color</span>
+            <div style={{display:'flex',gap:2,padding:'3px',borderRadius:11,background:light?'rgba(20,30,50,.06)':'rgba(255,255,255,.07)'}}>
+              <button style={tabStyle('pastel')} onClick={()=>pickGroup('pastel')}>pastel</button>
+              <button style={tabStyle('vivos')} onClick={()=>pickGroup('vivos')}>vivos</button>
+              <button style={tabStyle('custom')} onClick={()=>pickGroup('custom')}>custom</button>
+            </div>
           </div>
+          {group!=='custom'?(
+            <div className="color-row">
+              {COLOR_GROUPS[group].map(hex=>(
+                <button key={hex}
+                  onClick={()=>setColor(hex)}
+                  style={{
+                    width:26,height:26,borderRadius:'50%',cursor:'pointer',border:'none',
+                    background:hex,flexShrink:0,
+                    outline: color===hex ? `2px solid ${light?'rgba(20,30,50,.7)':'rgba(232,232,236,.8)'}` : '2px solid transparent',
+                    outlineOffset:2,
+                    boxShadow:'0 0 0 1px rgba(0,0,0,.1) inset,0 2px 4px rgba(0,0,0,.15)',
+                    transition:'transform .15s, outline .15s',
+                    transform: color===hex?'scale(1.1)':'scale(1)',
+                  }}/>
+              ))}
+            </div>
+          ):(
+            <div style={{display:'flex',alignItems:'center',gap:12}}>
+              <div style={{
+                width:42,height:42,borderRadius:11,flexShrink:0,cursor:'pointer',
+                background:customColor,position:'relative',overflow:'hidden',
+                boxShadow:'0 2px 8px rgba(0,0,0,.2)',border:'1px solid rgba(255,255,255,.15)',
+              }}>
+                <input type="color" value={customColor}
+                  onChange={e=>{setCustomColor(e.target.value);setColor(e.target.value);}}
+                  style={{position:'absolute',inset:0,width:'100%',height:'100%',opacity:0,cursor:'pointer'}}/>
+              </div>
+              <div>
+                <div style={{fontFamily:"'DM Mono',monospace",fontSize:12,color:light?'rgba(20,30,50,.7)':'rgba(232,232,236,.7)',letterSpacing:'.05em'}}>{customColor}</div>
+                <div style={{fontFamily:"'Cormorant Garamond',serif",fontStyle:'italic',fontSize:12,color:light?'rgba(20,30,50,.4)':'rgba(232,232,236,.4)',marginTop:2}}>tocá el cuadrado para elegir</div>
+              </div>
+              {/* Preview texto sobre el color elegido */}
+              <div style={{
+                marginLeft:'auto',padding:'6px 10px',borderRadius:8,
+                background:customColor,
+                color:luminance(customColor)>.55?'#1a1a1a':'#ffffff',
+                fontFamily:"'Caveat',cursive",fontSize:14,
+                boxShadow:'0 2px 6px rgba(0,0,0,.15)',
+                whiteSpace:'nowrap',
+              }}>Aa</div>
+            </div>
+          )}
         </div>
         <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
           <button className={`mbtn${light?' light':''}`} onClick={onCancel}>Cancelar</button>
@@ -827,19 +903,21 @@ function BoardEl({el,onMove,onDelete,onUpdateCaption,onPress,scale}){
   const style={left:el.x,top:el.y,transform:`rotate(${rot}deg)`,zIndex:el.z||1};
 
   if(el.type==='postit'){
-    const nc=PCOLORS.find(c=>c.id===el.color)||PCOLORS[0];
+    const bgColor=PCOLORS.find(c=>c.id===el.color)?.v||el.color||'#fefcf0';
     const font=FONTS.find(f=>f.id===el.font)||FONTS[4];
     const w=el.w||220;
+    const dark=luminance(bgColor)<.55;
+    const tc=dark?'rgba(255,255,255,.88)':'rgba(20,20,20,.82)';
     return(
       <div ref={elRef} className="board-el el-in" style={style}
         onMouseDown={startDrag} onTouchStart={startDrag}>
         <button className="del-btn" onClick={()=>onDelete(el.id)}><Icon.X className="icon-sm"/></button>
-        <div className="postit" style={{background:nc.v,fontFamily:font.css,width:w,height:el.h||'auto',overflow:'hidden'}}>
+        <div className="postit" style={{background:bgColor,fontFamily:font.css,width:w,height:el.h||'auto',overflow:'hidden',color:tc}}>
           <div className="postit-author">— {el.author_name}</div>
           <div className="postit-text" style={{fontSize:el.font==='caveat'?'1.15rem':'13.5px',fontStyle:['cormorant','lora'].includes(el.font)?'italic':'normal'}}>{el.content}</div>
           <div className="postit-time">{new Date(el.created_at).toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'})}</div>
         </div>
-        <div className="resize-handle" onMouseDown={startResize} onTouchStart={startResize} style={{color:'rgba(0,0,0,.4)'}}/>
+        <div className="resize-handle" onMouseDown={startResize} onTouchStart={startResize} style={{color:dark?'rgba(255,255,255,.4)':'rgba(0,0,0,.4)'}}/>
       </div>
     );
   }
