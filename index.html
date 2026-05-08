@@ -1442,139 +1442,181 @@ function App(){
   // ═══════════════════════════════════════════════════════════
   const draggingEl=useRef(false);
   const elDragActive=useCallback((v)=>{draggingEl.current=v;},[]);
+  const worldRef=useRef(null); // ref al div canvas-world para moverlo directo
 
-  // Todos los handlers leen viewportRefState.current — nunca stale
+  // Motor de gestos — manipula el DOM durante el gesto, React state solo al soltar
   useEffect(()=>{
-    const v=viewportRef.current;if(!v)return;
-
-    const g={panning:false,pinching:false,panStart:null,pinchStart:null};
-
-    const getVP=()=>viewportRefState.current;
-    const setVP=(next)=>{
-      // Si next es función (updater), la llamamos con el valor actual del ref
-      const resolved=typeof next==='function'?next(viewportRefState.current):next;
-      viewportRefState.current=resolved; // actualizar ref inmediatamente
-      setViewport(resolved);
+    const vp=viewportRef.current;if(!vp)return;
+    // Estado mutable local — no React, no closures stale
+    const s={
+      tx:0,ty:0,scale:1,   // estado actual del canvas
+      panning:false,pinching:false,
+      startCx:0,startCy:0, // posición del cursor/dedo al inicio del gesto
+      startTx:0,startTy:0, // tx/ty al inicio del gesto
+      pinchDist:0,pinchCx:0,pinchCy:0,pinchTx:0,pinchTy:0,pinchScale:1,
     };
+
+    // Leer viewport inicial desde localStorage si existe
+    const saved=ls.get('viewport_'+ls.get('roomId'));
+    if(saved&&typeof saved.scale==='number'){
+      s.tx=saved.tx||0;s.ty=saved.ty||0;s.scale=saved.scale||1;
+    }
+
+    const applyTransform=()=>{
+      const w=worldRef.current;if(!w)return;
+      w.style.transform=`translate(${s.tx}px,${s.ty}px) scale(${s.scale})`;
+    };
+
+    const commitToReact=()=>{
+      const next={tx:s.tx,ty:s.ty,scale:s.scale};
+      viewportRefState.current=next;
+      setViewport(next);
+      ls.set('viewport_'+ls.get('roomId'),next);
+    };
+
+    // Aplicar estado inicial
+    applyTransform();
 
     // ── Wheel ──
     const onWheel=(e)=>{
       e.preventDefault();
-      const vp=getVP();
       const delta=-e.deltaY*(e.deltaMode===1?0.05:0.0012);
-      const ns=Math.max(MIN_ZOOM,Math.min(MAX_ZOOM,vp.scale*(1+delta)));
-      if(Math.abs(ns-vp.scale)<0.001)return;
-      const r=v.getBoundingClientRect();
+      const ns=Math.max(MIN_ZOOM,Math.min(MAX_ZOOM,s.scale*(1+delta)));
+      if(Math.abs(ns-s.scale)<0.001)return;
+      const r=vp.getBoundingClientRect();
       const cx=e.clientX-r.left-r.width/2;
       const cy=e.clientY-r.top-r.height/2;
-      const ratio=ns/vp.scale;
-      setVP({tx:cx-(cx-vp.tx)*ratio,ty:cy-(cy-vp.ty)*ratio,scale:ns});
+      const ratio=ns/s.scale;
+      s.tx=cx-(cx-s.tx)*ratio;
+      s.ty=cy-(cy-s.ty)*ratio;
+      s.scale=ns;
+      applyTransform();
+      commitToReact();
     };
 
-    // ── Pointer down ──
-    const onDown=(e)=>{
-      if(e.touches){
-        if(e.touches.length===2){
-          e.preventDefault();
-          const t1=e.touches[0],t2=e.touches[1];
-          g.pinching=true;g.panning=false;
-          g.pinchStart={
-            dist:Math.hypot(t2.clientX-t1.clientX,t2.clientY-t1.clientY),
-            cx:(t1.clientX+t2.clientX)/2,cy:(t1.clientY+t2.clientY)/2,
-            vp:{...getVP()}
-          };
-          return;
-        }
-        if(e.touches.length===1&&!draggingEl.current){
-          e.preventDefault();
-          g.panning=true;
-          g.panStart={cx:e.touches[0].clientX,cy:e.touches[0].clientY,...getVP()};
-          setIsPanning(true);
-        }
-      } else {
-        const onEl=!!e.target.closest('.board-el');
-        // Pan: botón medio, o izquierdo sin estar sobre elemento
-        if(e.button===1||(e.button===0&&!onEl)){
-          e.preventDefault();
-          g.panning=true;
-          g.panStart={cx:e.clientX,cy:e.clientY,...getVP()};
-          setIsPanning(true);
-        }
+    // ── Mouse ──
+    const onMouseDown=(e)=>{
+      if(draggingEl.current)return;
+      if(e.button!==0&&e.button!==1)return;
+      if(e.button===0&&!!e.target.closest('.board-el'))return;
+      e.preventDefault();
+      s.panning=true;
+      s.startCx=e.clientX;s.startCy=e.clientY;
+      s.startTx=s.tx;s.startTy=s.ty;
+      setIsPanning(true);
+    };
+    const onMouseMove=(e)=>{
+      if(!s.panning||draggingEl.current)return;
+      s.tx=s.startTx+(e.clientX-s.startCx);
+      s.ty=s.startTy+(e.clientY-s.startCy);
+      applyTransform();
+    };
+    const onMouseUp=()=>{
+      if(!s.panning)return;
+      s.panning=false;
+      setIsPanning(false);
+      commitToReact();
+    };
+
+    // ── Touch ──
+    const onTouchStart=(e)=>{
+      if(e.touches.length===2){
+        // Pinch — siempre, incluso sobre elementos
+        e.preventDefault();
+        s.pinching=true;s.panning=false;
+        const t1=e.touches[0],t2=e.touches[1];
+        s.pinchDist=Math.hypot(t2.clientX-t1.clientX,t2.clientY-t1.clientY);
+        s.pinchCx=(t1.clientX+t2.clientX)/2;
+        s.pinchCy=(t1.clientY+t2.clientY)/2;
+        s.pinchTx=s.tx;s.pinchTy=s.ty;s.pinchScale=s.scale;
+        return;
+      }
+      if(e.touches.length===1&&!draggingEl.current){
+        e.preventDefault();
+        s.panning=true;
+        s.startCx=e.touches[0].clientX;s.startCy=e.touches[0].clientY;
+        s.startTx=s.tx;s.startTy=s.ty;
+        setIsPanning(true);
       }
     };
-
-    // ── Pointer move ──
-    const onMove=(e)=>{
-      if(g.pinching&&e.touches&&e.touches.length===2){
+    const onTouchMove=(e)=>{
+      if(s.pinching&&e.touches.length===2){
         e.preventDefault();
         const t1=e.touches[0],t2=e.touches[1];
         const dist=Math.hypot(t2.clientX-t1.clientX,t2.clientY-t1.clientY);
         const cx=(t1.clientX+t2.clientX)/2,cy=(t1.clientY+t2.clientY)/2;
-        const s=g.pinchStart;
-        const ns=Math.max(MIN_ZOOM,Math.min(MAX_ZOOM,s.vp.scale*(dist/s.dist)));
-        const r=v.getBoundingClientRect();
-        const px=s.cx-r.left-r.width/2,py=s.cy-r.top-r.height/2;
-        const ratio=ns/s.vp.scale;
-        setVP({tx:px-(px-s.vp.tx)*ratio+(cx-s.cx),ty:py-(py-s.vp.ty)*ratio+(cy-s.cy),scale:ns});
+        const ns=Math.max(MIN_ZOOM,Math.min(MAX_ZOOM,s.pinchScale*(dist/s.pinchDist)));
+        const r=vp.getBoundingClientRect();
+        const px=s.pinchCx-r.left-r.width/2,py=s.pinchCy-r.top-r.height/2;
+        const ratio=ns/s.pinchScale;
+        s.tx=px-(px-s.pinchTx)*ratio+(cx-s.pinchCx);
+        s.ty=py-(py-s.pinchTy)*ratio+(cy-s.pinchCy);
+        s.scale=ns;
+        applyTransform();
         return;
       }
-      if(g.panning&&!draggingEl.current){
-        const p=e.touches?e.touches[0]:e;
-        const s=g.panStart;if(!s)return;
-        const vp=getVP();
-        setVP({...vp,tx:s.tx+(p.clientX-s.cx),ty:s.ty+(p.clientY-s.cy)});
+      if(s.panning&&!draggingEl.current&&e.touches.length===1){
+        e.preventDefault();
+        s.tx=s.startTx+(e.touches[0].clientX-s.startCx);
+        s.ty=s.startTy+(e.touches[0].clientY-s.startCy);
+        applyTransform();
       }
     };
-
-    // ── Pointer up ──
-    const onUp=(e)=>{
-      if(g.pinching&&(!e.touches||e.touches.length<2)){
-        g.pinching=false;
+    const onTouchEnd=(e)=>{
+      if(s.pinching&&(!e.touches||e.touches.length<2)){
+        s.pinching=false;
+        commitToReact();
         if(e.touches&&e.touches.length===1){
-          g.panning=true;
-          g.panStart={cx:e.touches[0].clientX,cy:e.touches[0].clientY,...getVP()};
+          s.panning=true;
+          s.startCx=e.touches[0].clientX;s.startCy=e.touches[0].clientY;
+          s.startTx=s.tx;s.startTy=s.ty;
           return;
         }
       }
-      if(g.panning&&(!e.touches||e.touches.length===0)){
-        g.panning=false;setIsPanning(false);
+      if(s.panning&&(!e.touches||e.touches.length===0)){
+        s.panning=false;setIsPanning(false);
+        commitToReact();
       }
     };
 
-    v.addEventListener('wheel',onWheel,{passive:false});
-    v.addEventListener('mousedown',onDown);
-    v.addEventListener('touchstart',onDown,{passive:false});
-    document.addEventListener('mousemove',onMove,{passive:false});
-    document.addEventListener('touchmove',onMove,{passive:false});
-    document.addEventListener('mouseup',onUp);
-    document.addEventListener('touchend',onUp);
+    vp.addEventListener('wheel',onWheel,{passive:false});
+    vp.addEventListener('mousedown',onMouseDown);
+    vp.addEventListener('touchstart',onTouchStart,{passive:false});
+    document.addEventListener('mousemove',onMouseMove);
+    document.addEventListener('mouseup',onMouseUp);
+    document.addEventListener('touchmove',onTouchMove,{passive:false});
+    document.addEventListener('touchend',onTouchEnd);
     return()=>{
-      v.removeEventListener('wheel',onWheel);
-      v.removeEventListener('mousedown',onDown);
-      v.removeEventListener('touchstart',onDown);
-      document.removeEventListener('mousemove',onMove);
-      document.removeEventListener('touchmove',onMove);
-      document.removeEventListener('mouseup',onUp);
-      document.removeEventListener('touchend',onUp);
+      vp.removeEventListener('wheel',onWheel);
+      vp.removeEventListener('mousedown',onMouseDown);
+      vp.removeEventListener('touchstart',onTouchStart);
+      document.removeEventListener('mousemove',onMouseMove);
+      document.removeEventListener('mouseup',onMouseUp);
+      document.removeEventListener('touchmove',onTouchMove);
+      document.removeEventListener('touchend',onTouchEnd);
     };
-  // Solo corre una vez — todos los datos vienen de refs, no de closures
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
 
-  // Zoom buttons
+  const applyAndCommit=(tx,ty,scale)=>{
+    const w=worldRef.current;
+    if(w)w.style.transform=`translate(${tx}px,${ty}px) scale(${scale})`;
+    const next={tx,ty,scale};
+    viewportRefState.current=next;
+    setViewport(next);
+    ls.set('viewport_'+session?.roomId,next);
+  };
   const zoomIn=()=>{
     const vp=viewportRefState.current;
-    const newScale=Math.min(MAX_ZOOM,vp.scale*(1+ZOOM_STEP));
-    setViewport({...vp,scale:newScale});
+    const ns=Math.min(MAX_ZOOM,vp.scale*(1+ZOOM_STEP));
+    applyAndCommit(vp.tx,vp.ty,ns);
   };
   const zoomOut=()=>{
     const vp=viewportRefState.current;
-    const newScale=Math.max(MIN_ZOOM,vp.scale*(1-ZOOM_STEP));
-    setViewport({...vp,scale:newScale});
+    const ns=Math.max(MIN_ZOOM,vp.scale*(1-ZOOM_STEP));
+    applyAndCommit(vp.tx,vp.ty,ns);
   };
-  const centerView=()=>{
-    setViewport({tx:0,ty:0,scale:1});
-  };
+  const centerView=()=>applyAndCommit(0,0,1);
 
   // ═══════════════════════════════════════════════════════════
   // Element actions
@@ -1702,10 +1744,11 @@ function App(){
         ref={viewportRef}
         className={`canvas-viewport${isPanning?' panning':''}${spaceDown?' spacing':''}`}
       >
-        {/* Canvas world - se transforma con pan/zoom */}
+        {/* Canvas world - transformado directo por el motor de gestos */}
         <div
+          ref={worldRef}
           className="canvas-world"
-          style={{transform:`translate(${viewport.tx}px, ${viewport.ty}px) scale(${viewport.scale})`}}
+          style={{transform:`translate(${viewport.tx}px,${viewport.ty}px) scale(${viewport.scale})`}}
         >
           {elements.map(el=>(
             <BoardEl key={el.id} el={el} myId={session.userId}
