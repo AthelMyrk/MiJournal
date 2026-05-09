@@ -1881,7 +1881,7 @@ function App(){
       document.removeEventListener('touchmove',onTouchMove);
       document.removeEventListener('touchend',onTouchEnd);
     };
-  },[session]);
+  },[session,showGarden]);
 
   // Zoom UI buttons — escriben al DOM y al G.current directamente
   const applyAndCommit=(tx,ty,scale)=>{
