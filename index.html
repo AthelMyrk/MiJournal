@@ -1347,9 +1347,9 @@ function selectPlant(dateStr,{total,postits,sketches,polaroids,authors}){
   return 'cactus';
 }
 function calcGrowth(wateredDays){
-  if(wateredDays<=0)return 0.18;
+  if(wateredDays<=0)return 0.32;
   if(wateredDays>=7)return 1.0;
-  return 0.18+(wateredDays/7)*0.82;
+  return 0.32+(wateredDays/7)*0.68;
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1632,9 +1632,10 @@ function Garden({session,dark}){
               <div style={{position:'relative',width:132,height:230}}>
                 {PlantComp&&(
                   <div style={{
-                    position:'absolute',bottom:62,left:'50%',
+                    position:'absolute',bottom:78,left:'50%',
                     width:110,height:120,
                     transform:'translateX(-50%)',
+                    zIndex:2,
                     filter:isHovered?'brightness(1.08)':'none',transition:'filter .2s',
                   }}>
                     {/* capa breathe — separada para no pisar el translateX */}
