@@ -1061,15 +1061,16 @@ const POT_PALETTE=[
 function Pot({empty=false, potColors=null}){
   const c=potColors||POT_PALETTE[0];
   return(
-    <svg viewBox="0 0 100 64" width="100" height="64" style={{display:'block',overflow:'visible'}}>
+    <svg viewBox="0 0 100 64" width="132" height="84" style={{display:'block',overflow:'visible'}}>
       <ellipse cx="50" cy="59" rx="40" ry="7" fill={c.s} opacity=".55"/>
       <ellipse cx="50" cy="57" rx="38" ry="5.5" fill={c.m}/>
       <path d="M20 15 L11 54 Q50 62 89 54 L80 15Z" fill={c.b}/>
       <path d="M26 17 Q22 35 20 52" stroke="rgba(255,255,255,.17)" strokeWidth="5" strokeLinecap="round" fill="none"/>
       <rect x="17" y="9" width="66" height="12" rx="6" fill={c.l}/>
       <ellipse cx="50" cy="9" rx="33" ry="7" fill={c.r}/>
-      <ellipse cx="50" cy="15" rx="29" ry="6.5" fill={empty?'#8B5E3C':'#2e1408'}/>
-      {empty&&<ellipse cx="46" cy="13" rx="10" ry="3.5" fill="#7a5230" opacity=".5"/>}
+      <ellipse cx="50" cy="15" rx="29" ry="6.5" fill={empty?'#a07040':'#6b3d18'}/>
+      <ellipse cx="50" cy="14" rx="18" ry="3.5" fill={empty?'#8a5e30':'#7a4a20'} opacity=".7"/>
+      {empty&&<ellipse cx="46" cy="12" rx="9" ry="2.5" fill="#c09060" opacity=".35"/>}
     </svg>
   );
 }
@@ -1556,7 +1557,7 @@ function Garden({session,dark}){
       )}
 
       {/* Grid de macetas */}
-      <div style={{opacity:fade?1:0,transition:'opacity .22s ease',display:'grid',gridTemplateColumns:'repeat(3,120px)',gap:'16px 28px',padding:'24px 48px 8px'}}>
+      <div style={{opacity:fade?1:0,transition:'opacity .22s ease',display:'grid',gridTemplateColumns:'repeat(3,158px)',gap:'20px 36px',padding:'24px 40px 8px'}}>
         {pageSlots.map(slot=>{
           const plantType=slot.isToday?null:selectPlant(slot.date,slot);
           const PlantComp=plantType?PLANT_COMPONENTS[plantType]:null;
@@ -1581,11 +1582,11 @@ function Garden({session,dark}){
               }}
             >
               {/* Planta + Maceta */}
-              <div style={{position:'relative',width:100,height:180}}>
+              <div style={{position:'relative',width:132,height:230}}>
                 {PlantComp&&(
                   <div style={{
-                    position:'absolute',bottom:58,left:'50%',
-                    width:80,height:88,
+                    position:'absolute',bottom:78,left:'50%',
+                    width:110,height:120,
                     transform:'translateX(-50%)',
                     filter:isHovered?'brightness(1.08)':'none',transition:'filter .2s',
                   }}>
@@ -1698,7 +1699,7 @@ function Garden({session,dark}){
               </div>
 
               {/* Sombra de repisa */}
-              <div style={{width:110,height:6,borderRadius:'0 0 6px 6px',background:dark?'rgba(0,0,0,.18)':'rgba(0,0,0,.08)',marginTop:-4,marginBottom:2,filter:'blur(2px)'}}/>
+              <div style={{width:145,height:7,borderRadius:'0 0 6px 6px',background:dark?'rgba(0,0,0,.18)':'rgba(0,0,0,.08)',marginTop:-4,marginBottom:2,filter:'blur(3px)'}}/>
 
               {/* Indicadores de riego (dos gotitas) */}
               {!slot.isToday&&(
@@ -1736,13 +1737,13 @@ function Garden({session,dark}){
           );
         })}
         {Array.from({length:Math.max(0,ITEMS-pageSlots.length)}).map((_,i)=>(
-          <div key={'empty-'+i} style={{width:120,height:240}}/>
+          <div key={'empty-'+i} style={{width:158,height:300}}/>
         ))}
       </div>
 
       {/* Repisa */}
       <div style={{
-        width:'min(480px,90vw)',height:14,borderRadius:4,marginTop:-2,
+        width:'min(620px,92vw)',height:16,borderRadius:5,marginTop:-2,
         background:dark?'linear-gradient(180deg,#a0784a,#7a5830)':'linear-gradient(180deg,#d4a870,#b8885c)',
         boxShadow:dark?'0 6px 18px rgba(0,0,0,.4)':'0 6px 18px rgba(0,0,0,.18)',
         position:'relative',
