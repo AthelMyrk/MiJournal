@@ -1365,8 +1365,52 @@ function Garden({session,dark}){
   const [page,setPage]=useState(0);
   const [tooltip,setTooltip]=useState(null);
   const [fade,setFade]=useState(true);
+  const [gardenScale,setGardenScale]=useState(1);
+  const gardenScaleRef=useRef(1);
+  const gardenContainerRef=useRef(null);
   const today=todayStr();
   const ITEMS=9;
+
+  // Zoom con rueda / pinch — centrado, sin pan
+  useEffect(()=>{
+    const el=gardenContainerRef.current;
+    if(!el)return;
+    const MIN=0.5,MAX=2.2;
+    const onWheel=e=>{
+      e.preventDefault();
+      const delta=e.deltaY<0?0.09:-0.09;
+      const ns=Math.max(MIN,Math.min(MAX,gardenScaleRef.current+delta));
+      gardenScaleRef.current=ns;
+      setGardenScale(ns);
+    };
+    let lastDist=null;
+    const onTouchStart=e=>{
+      if(e.touches.length===2){
+        lastDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+      }
+    };
+    const onTouchMove=e=>{
+      if(e.touches.length===2&&lastDist!=null){
+        e.preventDefault();
+        const dist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+        const ns=Math.max(MIN,Math.min(MAX,gardenScaleRef.current*(dist/lastDist)));
+        gardenScaleRef.current=ns;
+        setGardenScale(ns);
+        lastDist=dist;
+      }
+    };
+    const onTouchEnd=()=>{lastDist=null;};
+    el.addEventListener('wheel',onWheel,{passive:false});
+    el.addEventListener('touchstart',onTouchStart,{passive:true});
+    el.addEventListener('touchmove',onTouchMove,{passive:false});
+    el.addEventListener('touchend',onTouchEnd);
+    return()=>{
+      el.removeEventListener('wheel',onWheel);
+      el.removeEventListener('touchstart',onTouchStart);
+      el.removeEventListener('touchmove',onTouchMove);
+      el.removeEventListener('touchend',onTouchEnd);
+    };
+  },[]);
 
   // Cargar notas agrupadas por día
   useEffect(()=>{
@@ -1542,7 +1586,7 @@ function Garden({session,dark}){
   };
 
   return(
-    <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',overflow:'hidden'}} onClick={()=>setActivePicker(null)}>
+    <div ref={gardenContainerRef} style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',overflow:'hidden'}} onClick={()=>setActivePicker(null)}>
 
       {/* Flechas de navegación */}
       {totalPages>1&&page>0&&(
@@ -1555,6 +1599,9 @@ function Garden({session,dark}){
           <Icon.ChevronRight className="icon"/>
         </button>
       )}
+
+      {/* Wrapper escalable — zoom centrado */}
+      <div style={{transform:`scale(${gardenScale})`,transformOrigin:'center center',transition:'transform .12s ease-out',display:'flex',flexDirection:'column',alignItems:'center'}}>
 
       {/* Grid de macetas */}
       <div style={{opacity:fade?1:0,transition:'opacity .22s ease',display:'grid',gridTemplateColumns:'repeat(3,158px)',gap:'20px 36px',padding:'24px 40px 8px'}}>
@@ -1763,6 +1810,8 @@ function Garden({session,dark}){
           ))}
         </div>
       )}
+
+      </div>{/* /wrapper escalable */}
 
       {/* Tooltip hover */}
       {tooltip&&(
