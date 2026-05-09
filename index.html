@@ -1632,7 +1632,7 @@ function Garden({session,dark}){
               <div style={{position:'relative',width:132,height:230}}>
                 {PlantComp&&(
                   <div style={{
-                    position:'absolute',bottom:78,left:'50%',
+                    position:'absolute',bottom:62,left:'50%',
                     width:110,height:120,
                     transform:'translateX(-50%)',
                     filter:isHovered?'brightness(1.08)':'none',transition:'filter .2s',
@@ -1748,26 +1748,21 @@ function Garden({session,dark}){
               {/* Sombra de repisa */}
               <div style={{width:145,height:7,borderRadius:'0 0 6px 6px',background:dark?'rgba(0,0,0,.18)':'rgba(0,0,0,.08)',marginTop:-4,marginBottom:2,filter:'blur(3px)'}}/>
 
-              {/* Indicadores de riego (dos gotitas) */}
+              {/* Indicadores de riego (dos gotitas centradas) */}
               {!slot.isToday&&(
-                <div style={{display:'flex',gap:3,alignItems:'center',marginBottom:1}}>
-                  <svg viewBox="0 0 10 13" width="7" height="9">
+                <div style={{display:'flex',gap:4,alignItems:'center',justifyContent:'center',marginBottom:1}}>
+                  <svg viewBox="0 0 10 13" width="8" height="10">
                     <path d="M5 1 Q8 5 8 8 A3 3 0 0 1 2 8 Q2 5 5 1Z"
                       fill={meWatered?'#60b8ff':'none'}
-                      stroke={meWatered?'#60b8ff':dark?'rgba(232,232,236,.2)':'rgba(20,30,50,.2)'}
+                      stroke={meWatered?'#60b8ff':dark?'rgba(232,232,236,.25)':'rgba(20,30,50,.25)'}
                       strokeWidth="1"/>
                   </svg>
-                  <svg viewBox="0 0 10 13" width="7" height="9">
+                  <svg viewBox="0 0 10 13" width="8" height="10">
                     <path d="M5 1 Q8 5 8 8 A3 3 0 0 1 2 8 Q2 5 5 1Z"
                       fill={themWatered?'#a78bfa':'none'}
-                      stroke={themWatered?'#a78bfa':dark?'rgba(232,232,236,.2)':'rgba(20,30,50,.2)'}
+                      stroke={themWatered?'#a78bfa':dark?'rgba(232,232,236,.25)':'rgba(20,30,50,.25)'}
                       strokeWidth="1"/>
                   </svg>
-                  {!isFullyGrown&&(
-                    <span style={{fontFamily:"'DM Mono',monospace",fontSize:8,opacity:.4,marginLeft:2,letterSpacing:'-.02em'}}>
-                      {wateredDays}/7
-                    </span>
-                  )}
                 </div>
               )}
 
