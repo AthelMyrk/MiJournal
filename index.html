@@ -1332,11 +1332,10 @@ function selectPlant(dateStr,{total,postits,sketches,polaroids,authors}){
   if(total===1)return seed?'bambú':'pino';
   return 'cactus';
 }
-function calcGrowth(plantDate,today){
-  const days=Math.floor((new Date(today+'T12:00:00')-new Date(plantDate+'T12:00:00'))/86400000);
-  if(days<=0)return 0;
-  if(days>=5)return 1.0;
-  return 0.30+(days-1)*0.175;
+function calcGrowth(wateredDays){
+  if(wateredDays<=0)return 0.18;
+  if(wateredDays>=7)return 1.0;
+  return 0.18+(wateredDays/7)*0.82;
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1344,6 +1343,8 @@ function calcGrowth(plantDate,today){
 // ═══════════════════════════════════════════════════════════
 function Garden({session,dark}){
   const [days,setDays]=useState(null);
+  const [waterings,setWaterings]=useState({});
+  const [watering,setWatering]=useState(null);
   const [loading,setLoading]=useState(true);
   const [page,setPage]=useState(0);
   const [tooltip,setTooltip]=useState(null);
@@ -1351,6 +1352,7 @@ function Garden({session,dark}){
   const today=todayStr();
   const ITEMS=9;
 
+  // Cargar notas agrupadas por día
   useEffect(()=>{
     sb.from('murmur_notes')
       .select('created_at,type,author_id,author_name')
@@ -1389,11 +1391,76 @@ function Garden({session,dark}){
       });
   },[session.roomId]);
 
+  // Cargar riegos + suscripción en tiempo real
+  useEffect(()=>{
+    const load=()=>{
+      sb.from('murmur_waterings')
+        .select('plant_date,author_id,watered_on')
+        .eq('room_id',session.roomId)
+        .then(({data})=>{
+          if(!data)return;
+          const w={};
+          data.forEach(r=>{
+            if(!w[r.plant_date])w[r.plant_date]=[];
+            w[r.plant_date].push({author_id:r.author_id,watered_on:r.watered_on});
+          });
+          setWaterings(w);
+        });
+    };
+    load();
+    const ch=sb.channel('waterings-'+session.roomId)
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'murmur_waterings',filter:`room_id=eq.${session.roomId}`},load)
+      .subscribe();
+    return ()=>sb.removeChannel(ch);
+  },[session.roomId]);
+
+  // Días en que ambos regaron una planta → determina el crecimiento
+  const getWateredDays=plantDate=>{
+    const recs=waterings[plantDate]||[];
+    const byDay={};
+    recs.forEach(r=>{
+      if(!byDay[r.watered_on])byDay[r.watered_on]=new Set();
+      byDay[r.watered_on].add(r.author_id);
+    });
+    return Object.values(byDay).filter(s=>s.size>=2).length;
+  };
+
+  // ¿El usuario actual ya regó hoy esta planta?
+  const iWateredToday=plantDate=>{
+    const recs=waterings[plantDate]||[];
+    return recs.some(r=>r.author_id===session.userId&&r.watered_on===today);
+  };
+
+  // ¿El otro usuario ya regó hoy?
+  const otherWateredToday=plantDate=>{
+    const recs=waterings[plantDate]||[];
+    return recs.some(r=>r.author_id!==session.userId&&r.watered_on===today);
+  };
+
+  // Regar
+  const waterPlant=async(e,plantDate)=>{
+    e.stopPropagation();
+    if(watering||iWateredToday(plantDate))return;
+    setWatering(plantDate);
+    // Optimistic update
+    setWaterings(prev=>{
+      const next={...prev};
+      next[plantDate]=[...(next[plantDate]||[]),{author_id:session.userId,watered_on:today}];
+      return next;
+    });
+    await sb.from('murmur_waterings').insert({
+      room_id:session.roomId,
+      plant_date:plantDate,
+      author_id:session.userId,
+      watered_on:today,
+    });
+    setWatering(null);
+  };
+
   const fmtShort=d=>{
     const dt=new Date(d+'T12:00:00');
     return dt.toLocaleDateString('es',{day:'numeric',month:'short'});
   };
-
   const changePage=dir=>{
     setFade(false);
     setTimeout(()=>{setPage(p=>Math.max(0,Math.min(totalPages-1,p+dir)));setFade(true);},220);
@@ -1401,7 +1468,6 @@ function Garden({session,dark}){
   const goPage=i=>{setFade(false);setTimeout(()=>{setPage(i);setFade(true);},220);};
 
   const lightCls=dark?'':' light';
-  const tc=dark?'rgba(232,232,236,':'rgba(20,30,50,';
 
   if(loading||!days){
     return(
@@ -1414,10 +1480,9 @@ function Garden({session,dark}){
   const allSlots=[...days.past,days.todayData];
   const totalPages=Math.max(1,Math.ceil(allSlots.length/ITEMS));
   const pageSlots=allSlots.slice(page*ITEMS,(page+1)*ITEMS);
-
   const todayLabel=days.todayData.total===0?'aún sin notas':days.todayData.total<=2?'falta poco...':'casi lista ·✦';
 
-  const btnStyle={
+  const navBtnStyle={
     position:'absolute',top:'50%',transform:'translateY(-50%)',
     width:38,height:38,borderRadius:11,border:'none',cursor:'pointer',
     display:'flex',alignItems:'center',justifyContent:'center',
@@ -1427,80 +1492,135 @@ function Garden({session,dark}){
   };
 
   return(
-    <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:0,overflow:'hidden'}}>
+    <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',overflow:'hidden'}}>
 
-      {/* Arrows */}
+      {/* Flechas de navegación */}
       {totalPages>1&&page>0&&(
-        <button style={{...btnStyle,left:12}} onClick={()=>changePage(-1)} onMouseEnter={e=>e.currentTarget.style.transform='translateY(-50%) translateX(-1px)'} onMouseLeave={e=>e.currentTarget.style.transform='translateY(-50%)'}>
+        <button style={{...navBtnStyle,left:12}} onClick={()=>changePage(-1)}>
           <Icon.ChevronLeft className="icon"/>
         </button>
       )}
       {totalPages>1&&page<totalPages-1&&(
-        <button style={{...btnStyle,right:12}} onClick={()=>changePage(1)} onMouseEnter={e=>e.currentTarget.style.transform='translateY(-50%) translateX(1px)'} onMouseLeave={e=>e.currentTarget.style.transform='translateY(-50%)'}>
+        <button style={{...navBtnStyle,right:12}} onClick={()=>changePage(1)}>
           <Icon.ChevronRight className="icon"/>
         </button>
       )}
 
-      {/* Grid */}
+      {/* Grid de macetas */}
       <div style={{opacity:fade?1:0,transition:'opacity .22s ease',display:'grid',gridTemplateColumns:'repeat(3,120px)',gap:'16px 28px',padding:'24px 48px 8px'}}>
-        {pageSlots.map((slot)=>{
+        {pageSlots.map(slot=>{
           const plantType=slot.isToday?null:selectPlant(slot.date,slot);
-          const growth=slot.isToday?0:calcGrowth(slot.date,today);
           const PlantComp=plantType?PLANT_COMPONENTS[plantType]:null;
+          const wateredDays=slot.isToday?0:getWateredDays(slot.date);
+          const growth=slot.isToday?0:calcGrowth(wateredDays);
+          const meWatered=!slot.isToday&&iWateredToday(slot.date);
+          const themWatered=!slot.isToday&&otherWateredToday(slot.date);
+          const canWater=!slot.isToday&&!meWatered&&watering!==slot.date;
+          const isFullyGrown=wateredDays>=7;
           const isHovered=tooltip?.slot?.date===slot.date;
+
           return(
             <div key={slot.date}
-              style={{display:'flex',flexDirection:'column',alignItems:'center',gap:5,cursor:'pointer',position:'relative'}}
+              style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4,position:'relative',cursor:slot.isToday?'default':'pointer'}}
               onMouseEnter={e=>{if(!slot.isToday)setTooltip({slot,rect:e.currentTarget.getBoundingClientRect()});}}
               onMouseLeave={()=>setTooltip(null)}
               onClick={e=>{if(!slot.isToday)setTooltip(t=>t?.slot?.date===slot.date?null:{slot,rect:e.currentTarget.getBoundingClientRect()});}}
             >
-              {/* Plant + Pot container */}
+              {/* Planta + Maceta */}
               <div style={{position:'relative',width:100,height:180}}>
-                {/* Plant */}
                 {PlantComp&&(
                   <div style={{
-                    position:'absolute',bottom:58,left:'50%',
-                    transform:`translateX(-50%)`,
-                    width:80,height:88,
-                    transformOrigin:'bottom center',
+                    position:'absolute',bottom:58,left:'50%',transform:'translateX(-50%)',
+                    width:80,height:88,transformOrigin:'bottom center',
                     animation:'breathe 6s ease-in-out infinite',
-                    filter:isHovered?'brightness(1.06)':'none',
-                    transition:'filter .2s',
+                    filter:isHovered?'brightness(1.08)':'none',transition:'filter .2s',
                   }}>
-                    <div style={{transform:`scale(${growth})`,transformOrigin:'bottom center',width:'100%',height:'100%'}}>
+                    <div style={{transform:`scale(${growth})`,transformOrigin:'bottom center',width:'100%',height:'100%',transition:'transform 1.2s var(--ease-out-expo)'}}>
                       <PlantComp/>
                     </div>
                   </div>
                 )}
-                {/* Pot */}
                 <div style={{position:'absolute',bottom:0,left:'50%',transform:'translateX(-50%)'}}>
                   <Pot empty={!!slot.isToday}/>
                 </div>
+
+                {/* Botón de regar */}
+                {!slot.isToday&&!isFullyGrown&&(
+                  <button
+                    onClick={e=>waterPlant(e,slot.date)}
+                    title={meWatered?'ya regaste hoy':'regar'}
+                    style={{
+                      position:'absolute',bottom:2,right:-4,
+                      width:26,height:26,borderRadius:8,border:'none',
+                      background:meWatered
+                        ?dark?'rgba(255,255,255,.08)':'rgba(0,0,0,.06)'
+                        :'rgba(100,180,255,.22)',
+                      backdropFilter:'blur(8px)',
+                      cursor:meWatered?'default':'pointer',
+                      display:'flex',alignItems:'center',justifyContent:'center',
+                      opacity:meWatered?.45:1,
+                      transition:'all .2s',
+                      boxShadow:'0 2px 6px rgba(0,0,0,.2)',
+                    }}
+                  >
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke={meWatered?'currentColor':'#60b8ff'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" fill={meWatered?'none':'rgba(96,184,255,.3)'}/>
+                      <path d="M12 6v6l4 2"/>
+                      <path d="M7 14c0 2 1.5 4 5 4s5-2 5-4-5-2-5-2-5 0-5 2z" fill={meWatered?'none':'rgba(96,184,255,.4)'} stroke={meWatered?'currentColor':'#60b8ff'}/>
+                    </svg>
+                  </button>
+                )}
+                {isFullyGrown&&(
+                  <div style={{position:'absolute',bottom:4,right:-2,fontSize:12}}>✨</div>
+                )}
               </div>
-              {/* Shelf plank shadow under pot */}
+
+              {/* Sombra de repisa */}
               <div style={{width:110,height:6,borderRadius:'0 0 6px 6px',background:dark?'rgba(0,0,0,.18)':'rgba(0,0,0,.08)',marginTop:-4,marginBottom:2,filter:'blur(2px)'}}/>
-              {/* Date label */}
+
+              {/* Indicadores de riego (dos gotitas) */}
+              {!slot.isToday&&(
+                <div style={{display:'flex',gap:3,alignItems:'center',marginBottom:1}}>
+                  <svg viewBox="0 0 10 13" width="7" height="9">
+                    <path d="M5 1 Q8 5 8 8 A3 3 0 0 1 2 8 Q2 5 5 1Z"
+                      fill={meWatered?'#60b8ff':'none'}
+                      stroke={meWatered?'#60b8ff':dark?'rgba(232,232,236,.2)':'rgba(20,30,50,.2)'}
+                      strokeWidth="1"/>
+                  </svg>
+                  <svg viewBox="0 0 10 13" width="7" height="9">
+                    <path d="M5 1 Q8 5 8 8 A3 3 0 0 1 2 8 Q2 5 5 1Z"
+                      fill={themWatered?'#a78bfa':'none'}
+                      stroke={themWatered?'#a78bfa':dark?'rgba(232,232,236,.2)':'rgba(20,30,50,.2)'}
+                      strokeWidth="1"/>
+                  </svg>
+                  {!isFullyGrown&&(
+                    <span style={{fontFamily:"'DM Mono',monospace",fontSize:8,opacity:.4,marginLeft:2,letterSpacing:'-.02em'}}>
+                      {wateredDays}/7
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Fecha */}
               <div style={{fontFamily:"'DM Mono',monospace",fontSize:10,color:dark?'rgba(232,232,236,.5)':'rgba(20,30,50,.45)',letterSpacing:'.06em',textAlign:'center'}}>
                 {slot.isToday?'hoy':fmtShort(slot.date)}
               </div>
-              {/* Plant name / status */}
+
+              {/* Nombre de la planta / estado */}
               <div style={{fontFamily:"'Cormorant Garamond',serif",fontStyle:'italic',fontSize:12.5,color:dark?'rgba(232,232,236,.7)':'rgba(20,30,50,.65)',textAlign:'center',maxWidth:110,lineHeight:1.3}}>
                 {slot.isToday?todayLabel:plantType}
               </div>
             </div>
           );
         })}
-        {/* Fill empty slots to keep grid shape */}
         {Array.from({length:Math.max(0,ITEMS-pageSlots.length)}).map((_,i)=>(
-          <div key={'empty-'+i} style={{width:120,height:220}}/>
+          <div key={'empty-'+i} style={{width:120,height:240}}/>
         ))}
       </div>
 
-      {/* Shelf plank */}
+      {/* Repisa */}
       <div style={{
-        width:'min(480px,90vw)',height:14,
-        borderRadius:4,marginTop:-2,
+        width:'min(480px,90vw)',height:14,borderRadius:4,marginTop:-2,
         background:dark?'linear-gradient(180deg,#a0784a,#7a5830)':'linear-gradient(180deg,#d4a870,#b8885c)',
         boxShadow:dark?'0 6px 18px rgba(0,0,0,.4)':'0 6px 18px rgba(0,0,0,.18)',
         position:'relative',
@@ -1508,7 +1628,7 @@ function Garden({session,dark}){
         <div style={{position:'absolute',top:0,left:'5%',right:'5%',height:'40%',background:'rgba(255,255,255,.12)',borderRadius:'4px 4px 0 0'}}/>
       </div>
 
-      {/* Page dots */}
+      {/* Puntos de página */}
       {totalPages>1&&(
         <div style={{display:'flex',gap:6,marginTop:20}}>
           {Array.from({length:totalPages}).map((_,i)=>(
@@ -1521,12 +1641,12 @@ function Garden({session,dark}){
         </div>
       )}
 
-      {/* Tooltip */}
+      {/* Tooltip hover */}
       {tooltip&&(
         <div style={{
           position:'fixed',
-          left:Math.min(tooltip.rect.left+50,window.innerWidth-170),
-          top:Math.max(10,tooltip.rect.top-95),
+          left:Math.min(tooltip.rect.left+50,window.innerWidth-180),
+          top:Math.max(10,tooltip.rect.top-110),
           zIndex:200,
           background:dark?'rgba(14,18,28,.92)':'rgba(252,250,245,.92)',
           backdropFilter:'blur(16px) saturate(180%)',
@@ -1536,7 +1656,7 @@ function Garden({session,dark}){
           boxShadow:'0 8px 24px rgba(0,0,0,.28)',
           pointerEvents:'none',
           animation:'modalIn .2s var(--ease-out-expo)',
-          minWidth:148,
+          minWidth:152,
         }}>
           <div style={{position:'absolute',top:0,left:'15%',right:'15%',height:1,background:dark?'linear-gradient(90deg,transparent,rgba(255,255,255,.16) 50%,transparent)':'linear-gradient(90deg,transparent,rgba(255,255,255,.8) 50%,transparent)'}}/>
           <div style={{fontFamily:"'DM Mono',monospace",fontSize:9.5,opacity:.55,marginBottom:5,letterSpacing:'.06em'}}>{fmtShort(tooltip.slot.date)}</div>
@@ -1544,13 +1664,12 @@ function Garden({session,dark}){
             {tooltip.slot.total} nota{tooltip.slot.total!==1?'s':''}
           </div>
           {tooltip.slot.topAuthor&&(
-            <div style={{fontFamily:"'Cormorant Garamond',serif",fontStyle:'italic',fontSize:11.5,opacity:.65}}>más activ@: {tooltip.slot.topAuthor}</div>
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontStyle:'italic',fontSize:11.5,opacity:.65,marginBottom:4}}>más activ@: {tooltip.slot.topAuthor}</div>
           )}
-          {(tooltip.slot.sketches>0||tooltip.slot.polaroids>0)&&(
-            <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,opacity:.45,marginTop:6,letterSpacing:'.04em'}}>
-              {[tooltip.slot.postits>0&&`${tooltip.slot.postits}✎`,tooltip.slot.sketches>0&&`${tooltip.slot.sketches}✏`,tooltip.slot.polaroids>0&&`${tooltip.slot.polaroids}⬜`].filter(Boolean).join('  ')}
-            </div>
-          )}
+          <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,opacity:.5,letterSpacing:'.04em',display:'flex',gap:6,alignItems:'center'}}>
+            <span>💧 {getWateredDays(tooltip.slot.date)}/7 días</span>
+            {getWateredDays(tooltip.slot.date)>=7&&<span>✨ lista</span>}
+          </div>
         </div>
       )}
     </div>
