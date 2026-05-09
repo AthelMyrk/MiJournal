@@ -1046,15 +1046,28 @@ function Onboarding({onDone}){
 // ═══════════════════════════════════════════════════════════
 // Jardín — Maceta
 // ═══════════════════════════════════════════════════════════
-function Pot({empty=false}){
+const POT_PALETTE=[
+  {id:'terracota', b:'#c07038', r:'#e09050', l:'#d4854e', s:'#9a4a28', m:'#bf6d42'},
+  {id:'crema',    b:'#c8b48a', r:'#e0cca8', l:'#d4c098', s:'#9a8458', m:'#b8a478'},
+  {id:'pizarra',  b:'#607888', r:'#80a0b0', l:'#708898', s:'#405060', m:'#506878'},
+  {id:'salvia',   b:'#6a9468', r:'#8ab888', l:'#7aa878', s:'#4a7048', m:'#5a8458'},
+  {id:'índigo',   b:'#5868a8', r:'#7888c8', l:'#6878b8', s:'#384878', m:'#485898'},
+  {id:'lavanda',  b:'#9080b0', r:'#b0a0d0', l:'#a090c0', s:'#685880', m:'#8070a0'},
+  {id:'rosa',     b:'#c07880', r:'#e09898', l:'#d08888', s:'#905060', m:'#b06870'},
+  {id:'ocre',     b:'#b09040', r:'#d0b060', l:'#c0a050', s:'#806820', m:'#a08030'},
+  {id:'ébano',    b:'#363636', r:'#525252', l:'#444444', s:'#181818', m:'#282828'},
+  {id:'turquesa', b:'#508888', r:'#70a8a8', l:'#609898', s:'#306060', m:'#407878'},
+];
+function Pot({empty=false, potColors=null}){
+  const c=potColors||POT_PALETTE[0];
   return(
     <svg viewBox="0 0 100 64" width="100" height="64" style={{display:'block',overflow:'visible'}}>
-      <ellipse cx="50" cy="59" rx="40" ry="7" fill="#9a4a28" opacity=".55"/>
-      <ellipse cx="50" cy="57" rx="38" ry="5.5" fill="#bf6d42"/>
-      <path d="M20 15 L11 54 Q50 62 89 54 L80 15Z" fill="#c07038"/>
+      <ellipse cx="50" cy="59" rx="40" ry="7" fill={c.s} opacity=".55"/>
+      <ellipse cx="50" cy="57" rx="38" ry="5.5" fill={c.m}/>
+      <path d="M20 15 L11 54 Q50 62 89 54 L80 15Z" fill={c.b}/>
       <path d="M26 17 Q22 35 20 52" stroke="rgba(255,255,255,.17)" strokeWidth="5" strokeLinecap="round" fill="none"/>
-      <rect x="17" y="9" width="66" height="12" rx="6" fill="#d4854e"/>
-      <ellipse cx="50" cy="9" rx="33" ry="7" fill="#e09050"/>
+      <rect x="17" y="9" width="66" height="12" rx="6" fill={c.l}/>
+      <ellipse cx="50" cy="9" rx="33" ry="7" fill={c.r}/>
       <ellipse cx="50" cy="15" rx="29" ry="6.5" fill={empty?'#8B5E3C':'#2e1408'}/>
       {empty&&<ellipse cx="46" cy="13" rx="10" ry="3.5" fill="#7a5230" opacity=".5"/>}
     </svg>
@@ -1345,6 +1358,8 @@ function Garden({session,dark}){
   const [days,setDays]=useState(null);
   const [waterings,setWaterings]=useState({});
   const [watering,setWatering]=useState(null);
+  const [potSettings,setPotSettings]=useState({});
+  const [activePicker,setActivePicker]=useState(null);
   const [loading,setLoading]=useState(true);
   const [page,setPage]=useState(0);
   const [tooltip,setTooltip]=useState(null);
@@ -1413,6 +1428,40 @@ function Garden({session,dark}){
       .subscribe();
     return ()=>sb.removeChannel(ch);
   },[session.roomId]);
+
+  // Cargar colores de macetas + real-time
+  useEffect(()=>{
+    const load=()=>{
+      sb.from('murmur_pot_settings')
+        .select('plant_date,pot_color')
+        .eq('room_id',session.roomId)
+        .then(({data})=>{
+          if(!data)return;
+          const s={};
+          data.forEach(r=>{s[r.plant_date]=r.pot_color;});
+          setPotSettings(s);
+        });
+    };
+    load();
+    const ch=sb.channel('potsettings-'+session.roomId)
+      .on('postgres_changes',{event:'*',schema:'public',table:'murmur_pot_settings',filter:`room_id=eq.${session.roomId}`},load)
+      .subscribe();
+    return ()=>sb.removeChannel(ch);
+  },[session.roomId]);
+
+  const savePotColor=async(plantDate,colorId)=>{
+    setPotSettings(p=>({...p,[plantDate]:colorId}));
+    setActivePicker(null);
+    await sb.from('murmur_pot_settings').upsert(
+      {room_id:session.roomId,plant_date:plantDate,pot_color:colorId},
+      {onConflict:'room_id,plant_date'}
+    );
+  };
+
+  const getPotColors=plantDate=>{
+    const id=potSettings[plantDate];
+    return POT_PALETTE.find(p=>p.id===id)||POT_PALETTE[0];
+  };
 
   // Días en que ambos regaron una planta → determina el crecimiento
   const getWateredDays=plantDate=>{
@@ -1492,7 +1541,7 @@ function Garden({session,dark}){
   };
 
   return(
-    <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',overflow:'hidden'}}>
+    <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',overflow:'hidden'}} onClick={()=>setActivePicker(null)}>
 
       {/* Flechas de navegación */}
       {totalPages>1&&page>0&&(
@@ -1518,13 +1567,18 @@ function Garden({session,dark}){
           const canWater=!slot.isToday&&!meWatered&&watering!==slot.date;
           const isFullyGrown=wateredDays>=7;
           const isHovered=tooltip?.slot?.date===slot.date;
+          const potColors=slot.isToday?POT_PALETTE[0]:getPotColors(slot.date);
+          const pickerOpen=activePicker===slot.date;
 
           return(
             <div key={slot.date}
               style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4,position:'relative',cursor:slot.isToday?'default':'pointer'}}
-              onMouseEnter={e=>{if(!slot.isToday)setTooltip({slot,rect:e.currentTarget.getBoundingClientRect()});}}
+              onMouseEnter={e=>{if(!slot.isToday&&!pickerOpen)setTooltip({slot,rect:e.currentTarget.getBoundingClientRect()});}}
               onMouseLeave={()=>setTooltip(null)}
-              onClick={e=>{if(!slot.isToday)setTooltip(t=>t?.slot?.date===slot.date?null:{slot,rect:e.currentTarget.getBoundingClientRect()});}}
+              onClick={e=>{
+                if(pickerOpen){setActivePicker(null);return;}
+                if(!slot.isToday)setTooltip(t=>t?.slot?.date===slot.date?null:{slot,rect:e.currentTarget.getBoundingClientRect()});
+              }}
             >
               {/* Planta + Maceta */}
               <div style={{position:'relative',width:100,height:180}}>
@@ -1545,8 +1599,72 @@ function Garden({session,dark}){
                   </div>
                 )}
                 <div style={{position:'absolute',bottom:0,left:'50%',transform:'translateX(-50%)'}}>
-                  <Pot empty={!!slot.isToday}/>
+                  <Pot empty={!!slot.isToday} potColors={potColors}/>
                 </div>
+
+                {/* Botón paleta */}
+                {!slot.isToday&&(
+                  <button
+                    onClick={e=>{e.stopPropagation();setTooltip(null);setActivePicker(p=>p===slot.date?null:slot.date);}}
+                    title="cambiar color"
+                    style={{
+                      position:'absolute',bottom:2,left:-4,
+                      width:22,height:22,borderRadius:7,border:'none',
+                      background:pickerOpen
+                        ?'rgba(255,200,100,.35)'
+                        :dark?'rgba(255,255,255,.1)':'rgba(0,0,0,.08)',
+                      backdropFilter:'blur(8px)',cursor:'pointer',
+                      display:'flex',alignItems:'center',justifyContent:'center',
+                      opacity:isHovered||pickerOpen?1:.35,
+                      transition:'all .2s',boxShadow:'0 2px 6px rgba(0,0,0,.2)',
+                    }}
+                  >
+                    <svg viewBox="0 0 16 16" width="11" height="11" fill="none">
+                      <circle cx="8" cy="8" r="6.5" stroke={dark?'rgba(232,232,236,.7)':'rgba(20,30,50,.6)'} strokeWidth="1.2"/>
+                      <circle cx="5" cy="6" r="1.4" fill="#e05050"/>
+                      <circle cx="8" cy="4.5" r="1.4" fill="#e0b030"/>
+                      <circle cx="11" cy="6" r="1.4" fill="#50b050"/>
+                      <circle cx="11" cy="10" r="1.4" fill="#5070e0"/>
+                      <circle cx="5" cy="10" r="1.4" fill="#c050c0"/>
+                    </svg>
+                  </button>
+                )}
+
+                {/* Color picker inline */}
+                {pickerOpen&&(
+                  <div
+                    onClick={e=>e.stopPropagation()}
+                    style={{
+                      position:'absolute',bottom:70,left:'50%',transform:'translateX(-50%)',
+                      zIndex:300,
+                      background:dark?'rgba(14,18,28,.95)':'rgba(252,250,245,.95)',
+                      backdropFilter:'blur(20px) saturate(180%)',
+                      border:`1px solid ${dark?'rgba(255,255,255,.12)':'rgba(20,30,50,.1)'}`,
+                      borderRadius:13,padding:'10px 10px 8px',
+                      boxShadow:'0 8px 28px rgba(0,0,0,.35)',
+                      animation:'modalIn .18s var(--ease-out-expo)',
+                    }}
+                  >
+                    <div style={{fontFamily:"'DM Mono',monospace",fontSize:8.5,opacity:.45,letterSpacing:'.06em',marginBottom:7,textAlign:'center'}}>color de maceta</div>
+                    <div style={{display:'grid',gridTemplateColumns:'repeat(5,22px)',gap:5}}>
+                      {POT_PALETTE.map(p=>(
+                        <button key={p.id} onClick={()=>savePotColor(slot.date,p.id)}
+                          title={p.id}
+                          style={{
+                            width:22,height:22,borderRadius:7,border:'none',cursor:'pointer',
+                            background:p.b,
+                            outline:potColors.id===p.id?`2px solid ${dark?'rgba(255,255,255,.7)':'rgba(20,30,50,.6)'}`:'none',
+                            outlineOffset:2,
+                            boxShadow:`inset 0 -3px 0 ${p.s}`,
+                            transition:'transform .15s',
+                          }}
+                          onMouseEnter={e=>e.currentTarget.style.transform='scale(1.15)'}
+                          onMouseLeave={e=>e.currentTarget.style.transform='scale(1)'}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Botón de regar */}
                 {!slot.isToday&&!isFullyGrown&&(
