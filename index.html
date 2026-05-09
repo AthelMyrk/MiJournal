@@ -496,6 +496,7 @@ const Icon={
   Line:({className='icon'})=>(<svg className={className} viewBox="0 0 24 24"><path d="M5 19L19 5" strokeLinecap="round"/></svg>),
   Rect:({className='icon'})=>(<svg className={className} viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="1"/></svg>),
   Circle:({className='icon'})=>(<svg className={className} viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/></svg>),
+  Leaf:({className='icon'})=>(<svg className={className} viewBox="0 0 24 24"><path d="M11 20A7 7 0 0 1 4 13c0-4.59 4.5-8.3 7-11 2.5 2.7 7 6.41 7 11a7 7 0 0 1-7 7z" strokeLinecap="round" strokeLinejoin="round"/><path d="M11 20v-9" strokeLinecap="round"/></svg>),
   Logo:({className='icon-lg',style})=>(
     <svg className={className} viewBox="0 0 32 32" fill="none" style={style}>
       <defs>
@@ -1043,6 +1044,520 @@ function Onboarding({onDone}){
 }
 
 // ═══════════════════════════════════════════════════════════
+// Jardín — Maceta
+// ═══════════════════════════════════════════════════════════
+function Pot({empty=false}){
+  return(
+    <svg viewBox="0 0 100 64" width="100" height="64" style={{display:'block',overflow:'visible'}}>
+      <ellipse cx="50" cy="59" rx="40" ry="7" fill="#9a4a28" opacity=".55"/>
+      <ellipse cx="50" cy="57" rx="38" ry="5.5" fill="#bf6d42"/>
+      <path d="M20 15 L11 54 Q50 62 89 54 L80 15Z" fill="#c07038"/>
+      <path d="M26 17 Q22 35 20 52" stroke="rgba(255,255,255,.17)" strokeWidth="5" strokeLinecap="round" fill="none"/>
+      <rect x="17" y="9" width="66" height="12" rx="6" fill="#d4854e"/>
+      <ellipse cx="50" cy="9" rx="33" ry="7" fill="#e09050"/>
+      <ellipse cx="50" cy="15" rx="29" ry="6.5" fill={empty?'#8B5E3C':'#2e1408'}/>
+      {empty&&<ellipse cx="46" cy="13" rx="10" ry="3.5" fill="#7a5230" opacity=".5"/>}
+    </svg>
+  );
+}
+
+// ── Plantas ────────────────────────────────────────────────
+const PlantCactus=()=>(
+  <svg viewBox="0 0 100 110" width="80" height="88" style={{overflow:'visible'}}>
+    <path d="M58 62 Q74 59 76 46 Q77 35 68 34 Q61 33 60 43 Q59 54 58 60" fill="#4d8a3a" stroke="#3a6e2a" strokeWidth=".5"/>
+    <path d="M42 74 Q26 71 24 58 Q22 46 31 45 Q38 44 40 53 Q42 63 42 72" fill="#4d8a3a" stroke="#3a6e2a" strokeWidth=".5"/>
+    <path d="M42 108 Q40 70 41 28 Q50 18 59 28 Q60 70 58 108Z" fill="#5a9a42" stroke="#4a7a34" strokeWidth=".5"/>
+    <path d="M46 108 Q44 72 45 30" stroke="rgba(255,255,255,.22)" strokeWidth="3" strokeLinecap="round" fill="none"/>
+    {[32,48,64,80,96].map(y=><g key={y}><line x1="41" y1={y} x2="34" y2={y-5} stroke="#d4b870" strokeWidth="1.2" strokeLinecap="round"/><line x1="59" y1={y} x2="66" y2={y-5} stroke="#d4b870" strokeWidth="1.2" strokeLinecap="round"/></g>)}
+    {[0,60,120,180,240,300].map((a,i)=><ellipse key={i} cx={50+9*Math.cos(a*Math.PI/180)} cy={22+5.5*Math.sin(a*Math.PI/180)} rx="6" ry="3.5" fill="#e05060" transform={`rotate(${a},${50+9*Math.cos(a*Math.PI/180)},${22+5.5*Math.sin(a*Math.PI/180)})`}/>)}
+    <circle cx="50" cy="22" r="5" fill="#ffd060"/><circle cx="50" cy="22" r="2.5" fill="#e08020"/>
+  </svg>
+);
+const PlantSuculenta=()=>(
+  <svg viewBox="0 0 100 110" width="80" height="88" style={{overflow:'visible'}}>
+    {[0,45,90,135,180,225,270,315].map((a,i)=><ellipse key={i} cx={50+24*Math.cos(a*Math.PI/180)} cy={76+13*Math.sin(a*Math.PI/180)} rx="13" ry="7" fill={i%2===0?'#7ab87a':'#8fca8f'} transform={`rotate(${a},${50+24*Math.cos(a*Math.PI/180)},${76+13*Math.sin(a*Math.PI/180)})`}/>)}
+    {[22,67,112,157,202,247,292,337].map((a,i)=><ellipse key={i} cx={50+14*Math.cos(a*Math.PI/180)} cy={74+9*Math.sin(a*Math.PI/180)} rx="9" ry="5.5" fill={i%2===0?'#9acc9a':'#6ba86b'} transform={`rotate(${a},${50+14*Math.cos(a*Math.PI/180)},${74+9*Math.sin(a*Math.PI/180)})`}/>)}
+    <circle cx="50" cy="74" r="9" fill="#b8e0a8"/><circle cx="50" cy="74" r="4.5" fill="#d4eebc"/><circle cx="50" cy="74" r="2" fill="#f0f8e0"/>
+  </svg>
+);
+const PlantPothos=()=>(
+  <svg viewBox="0 0 100 110" width="80" height="88" style={{overflow:'visible'}}>
+    <path d="M50 108 Q33 85 18 68" stroke="#5a7a3a" strokeWidth="2" fill="none" strokeLinecap="round"/>
+    <path d="M50 108 Q56 80 66 63" stroke="#5a7a3a" strokeWidth="2" fill="none" strokeLinecap="round"/>
+    <path d="M50 108 Q40 76 26 53" stroke="#5a7a3a" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+    <path d="M50 108 Q62 74 77 56" stroke="#5a7a3a" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+    <path d="M50 108 Q48 78 50 58" stroke="#5a7a3a" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+    <path d="M18 68 Q6 52 12 39 Q27 36 32 52 Q27 62 18 68Z" fill="#6ab85a"/>
+    <path d="M66 63 Q80 53 82 38 Q67 34 60 50 Q60 58 66 63Z" fill="#78c068"/>
+    <path d="M26 53 Q12 42 18 29 Q33 26 34 44 Q31 49 26 53Z" fill="#72b862" opacity=".9"/>
+    <path d="M77 56 Q90 48 90 34 Q75 30 68 47 Q70 52 77 56Z" fill="#6ab85a" opacity=".9"/>
+    <path d="M50 58 Q40 45 44 32 Q57 30 57 47 Q55 53 50 58Z" fill="#80c870"/>
+    <path d="M10 50 Q20 58 18 68" stroke="rgba(255,255,255,.38)" strokeWidth="1" fill="none"/>
+    <path d="M80 48 Q72 56 66 63" stroke="rgba(255,255,255,.38)" strokeWidth="1" fill="none"/>
+    <path d="M46 35 Q50 48 50 58" stroke="rgba(255,255,255,.38)" strokeWidth="1" fill="none"/>
+  </svg>
+);
+const PlantLavanda=()=>(
+  <svg viewBox="0 0 100 110" width="80" height="88" style={{overflow:'visible'}}>
+    {[[36,108,30,44],[43,108,40,28],[50,108,50,22],[57,108,60,28],[64,108,70,44]].map(([x1,y1,x2,y2],i)=>(
+      <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#8a9a5a" strokeWidth="1.5" strokeLinecap="round"/>
+    ))}
+    {[[34,84],[42,78],[50,76],[58,78],[66,84]].map(([x,y],i)=>(
+      <g key={i}><ellipse cx={x-7} cy={y} rx="6" ry="3" fill="#7a9a5a" transform={`rotate(-30,${x-7},${y})`}/><ellipse cx={x+7} cy={y} rx="6" ry="3" fill="#7a9a5a" transform={`rotate(30,${x+7},${y})`}/></g>
+    ))}
+    {[[30,44,20],[40,28,16],[50,22,20],[60,28,16],[70,44,20]].map(([x,y,h],i)=>(
+      <g key={i}>
+        {[0,3,6,9,12].map(dy=>(
+          <g key={dy}><ellipse cx={x-2} cy={y-dy} rx="3.5" ry="2.2" fill="#9070c8" opacity=".85"/><ellipse cx={x+2} cy={y-dy} rx="3.5" ry="2.2" fill="#a080d8" opacity=".85"/></g>
+        ))}
+        <ellipse cx={x} cy={y-h} rx="3.5" ry="2.5" fill="#b090e0"/>
+      </g>
+    ))}
+  </svg>
+);
+const PlantMonstera=()=>(
+  <svg viewBox="0 0 100 110" width="80" height="88" style={{overflow:'visible'}}>
+    <path d="M50 108 Q47 86 38 54" stroke="#5a7a3a" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+    <path d="M42 64 Q50 59 58 54" stroke="#5a7a3a" strokeWidth="2" fill="none"/>
+    <path d="M58 54 Q82 34 76 12 Q68 6 59 11 Q65 20 62 30 Q73 28 70 40 Q64 44 57 42 Q51 30 49 18 Q43 13 37 19 Q34 30 40 40 Q31 44 27 36 Q24 25 32 17 Q38 13 44 18 Q40 9 33 7 Q25 9 21 20 Q17 36 27 51 Q34 59 43 62 Q50 64 58 54Z" fill="#5aaa4a"/>
+    <path d="M54 24 Q60 18 63 28 Q58 34 54 27Z" fill="#4a8a3a" opacity=".7"/>
+    <path d="M44 21 Q50 15 52 25 Q47 30 44 23Z" fill="#4a8a3a" opacity=".7"/>
+    <path d="M58 54 Q47 40 39 21" stroke="rgba(255,255,255,.32)" strokeWidth="2" fill="none" strokeLinecap="round"/>
+    <path d="M51 40 Q38 38 28 44" stroke="rgba(255,255,255,.22)" strokeWidth="1.2" fill="none"/>
+    <path d="M55 30 Q43 28 33 34" stroke="rgba(255,255,255,.22)" strokeWidth="1.2" fill="none"/>
+    <path d="M42 78 Q24 62 19 44 Q25 37 32 42 Q30 53 36 57 Q43 51 49 57 Q49 67 42 78Z" fill="#6aba56" opacity=".85"/>
+  </svg>
+);
+const PlantHelecho=()=>(
+  <svg viewBox="0 0 100 110" width="80" height="88" style={{overflow:'visible'}}>
+    <path d="M50 108 Q50 86 50 64" stroke="#5a7a3a" strokeWidth="2" fill="none" strokeLinecap="round"/>
+    <path d="M50 90 Q28 74 14 50" stroke="#5a8a3a" strokeWidth="1.8" fill="none" strokeLinecap="round"/>
+    <path d="M50 90 Q72 74 86 50" stroke="#5a8a3a" strokeWidth="1.8" fill="none" strokeLinecap="round"/>
+    {[[45,87,31,78],[39,82,23,72],[33,76,17,64],[26,70,14,58],[19,62,13,50]].map(([x1,y1,x2,y2],i)=>(
+      <g key={i}><path d={`M${x1} ${y1} Q${(x1+x2)/2-6} ${(y1+y2)/2-5} ${x2} ${y2}`} stroke="#6aaa4a" strokeWidth="4.5" strokeLinecap="round" fill="none" opacity={1-i*.08}/><path d={`M${x1} ${y1} Q${(x1+x2)/2+2} ${(y1+y2)/2+5} ${x2} ${y2}`} stroke="#88c86a" strokeWidth="2" strokeLinecap="round" fill="none" opacity={.7-i*.08}/></g>
+    ))}
+    {[[55,87,69,78],[61,82,77,72],[67,76,83,64],[74,70,86,58],[81,62,87,50]].map(([x1,y1,x2,y2],i)=>(
+      <g key={i}><path d={`M${x1} ${y1} Q${(x1+x2)/2+6} ${(y1+y2)/2-5} ${x2} ${y2}`} stroke="#6aaa4a" strokeWidth="4.5" strokeLinecap="round" fill="none" opacity={1-i*.08}/><path d={`M${x1} ${y1} Q${(x1+x2)/2-2} ${(y1+y2)/2+5} ${x2} ${y2}`} stroke="#88c86a" strokeWidth="2" strokeLinecap="round" fill="none" opacity={.7-i*.08}/></g>
+    ))}
+    <path d="M50 64 Q46 44 48 24" stroke="#5a8a3a" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+    {[[49,60,41,50],[48,52,40,42],[48,44,42,33]].map(([x1,y1,x2,y2],i)=><path key={i} d={`M${x1} ${y1} Q${x2-5} ${(y1+y2)/2} ${x2} ${y2}`} stroke="#6aaa4a" strokeWidth="3.5" strokeLinecap="round" fill="none" opacity={.9-i*.15}/>)}
+    {[[51,60,59,50],[52,52,60,42],[52,44,58,33]].map(([x1,y1,x2,y2],i)=><path key={i} d={`M${x1} ${y1} Q${x2+5} ${(y1+y2)/2} ${x2} ${y2}`} stroke="#6aaa4a" strokeWidth="3.5" strokeLinecap="round" fill="none" opacity={.9-i*.15}/>)}
+  </svg>
+);
+const PlantBambu=()=>(
+  <svg viewBox="0 0 100 110" width="80" height="88" style={{overflow:'visible'}}>
+    {[[36,12],[50,6],[64,12]].map(([cx,topY],si)=>{
+      const segs=[topY,topY+19,topY+38,topY+57,topY+76,108];
+      return segs.slice(0,-1).map((y,i)=>(
+        <g key={`${si}-${i}`}>
+          <rect x={cx-5} y={y} width="10" height={segs[i+1]-y-2} rx="3.5" fill={si===1?'#78b84a':'#68a83a'}/>
+          <rect x={cx-5} y={segs[i+1]-3} width="10" height="4" rx="2" fill={si===1?'#5a9032':'#4a7828'}/>
+        </g>
+      ));
+    })}
+    {[[36,12],[50,6],[64,12]].map(([cx,topY],si)=>(
+      <g key={si}>
+        <path d={`M${cx} ${topY} Q${cx-18} ${topY-10} ${cx-8} ${topY-24}`} stroke="#88d048" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+        <path d={`M${cx} ${topY} Q${cx+18} ${topY-8} ${cx+9} ${topY-23}`} stroke="#88d048" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+        <path d={`M${cx} ${topY} Q${cx-4} ${topY-18} ${cx} ${topY-30}`} stroke="#78c040" strokeWidth="2" fill="none" strokeLinecap="round"/>
+      </g>
+    ))}
+  </svg>
+);
+const PlantRosa=()=>(
+  <svg viewBox="0 0 100 110" width="80" height="88" style={{overflow:'visible'}}>
+    <path d="M50 108 Q48 82 52 38" stroke="#5a8a3a" strokeWidth="3" fill="none" strokeLinecap="round"/>
+    <path d="M49 88 L44 83" stroke="#4a7030" strokeWidth="1.5" strokeLinecap="round"/>
+    <path d="M51 68 L57 62" stroke="#4a7030" strokeWidth="1.5" strokeLinecap="round"/>
+    <path d="M49 82 Q31 73 27 57 Q38 51 48 65 Q50 74 49 82Z" fill="#6aaa4a"/>
+    <path d="M51 66 Q70 58 73 43 Q62 37 52 51 Q50 59 51 66Z" fill="#78ba52"/>
+    <path d="M27 57 Q38 64 49 82" stroke="rgba(255,255,255,.28)" strokeWidth="1.2" fill="none"/>
+    <path d="M73 43 Q62 52 51 66" stroke="rgba(255,255,255,.28)" strokeWidth="1.2" fill="none"/>
+    {[0,40,80,120,160,200,240,280,320].map((a,i)=><ellipse key={i} cx={52+13*Math.cos(a*Math.PI/180)} cy={32+8*Math.sin(a*Math.PI/180)} rx="9" ry="6" fill={i%2===0?'#e06070':'#f08090'} transform={`rotate(${a},${52+13*Math.cos(a*Math.PI/180)},${32+8*Math.sin(a*Math.PI/180)})`} opacity=".9"/>)}
+    {[20,92,164,236,308].map((a,i)=><ellipse key={i} cx={52+7*Math.cos(a*Math.PI/180)} cy={32+4.5*Math.sin(a*Math.PI/180)} rx="6" ry="4" fill="#e87880" transform={`rotate(${a},${52+7*Math.cos(a*Math.PI/180)},${32+4.5*Math.sin(a*Math.PI/180)})`}/>)}
+    <circle cx="52" cy="32" r="5" fill="#c05060"/><circle cx="52" cy="32" r="2.5" fill="#d06070"/>
+  </svg>
+);
+const PlantAloe=()=>(
+  <svg viewBox="0 0 100 110" width="80" height="88" style={{overflow:'visible'}}>
+    {[[-36,0],[36,0],[-56,22],[56,22],[-42,48],[42,48]].map(([dx,rot],i)=>(
+      <path key={i} d={`M50 102 Q${50+dx*.35} 86 ${50+dx} 64`} stroke="#7ac070" strokeWidth="8" strokeLinecap="round" fill="none" opacity={.85+i*.02} transform={`rotate(${rot},50,102)`}/>
+    ))}
+    {[[-16,0],[16,0],[-30,12],[30,12]].map(([dx,rot],i)=>(
+      <path key={i} d={`M50 102 Q${50+dx*.4} 82 ${50+dx} 56`} stroke="#90d080" strokeWidth="7" strokeLinecap="round" fill="none" transform={`rotate(${rot},50,102)`}/>
+    ))}
+    <path d="M50 102 Q50 80 50 46" stroke="#a8e090" strokeWidth="5.5" strokeLinecap="round" fill="none"/>
+    {[[-34,80],[34,80]].map(([dx,y],i)=>(
+      <path key={i} d={`M${50+dx*.2} ${y} Q${50+dx*.55} ${y-12} ${50+dx*.82} ${y-20}`} stroke="rgba(255,255,255,.28)" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+    ))}
+  </svg>
+);
+const PlantOrquidea=()=>(
+  <svg viewBox="0 0 100 110" width="80" height="88" style={{overflow:'visible'}}>
+    <path d="M42 108 Q40 86 45 66 Q52 40 60 18" stroke="#6a8a4a" strokeWidth="2" fill="none" strokeLinecap="round"/>
+    <path d="M42 108 Q21 100 17 84 Q28 77 40 90 Q42 100 42 108Z" fill="#5a8a3a"/>
+    <path d="M44 108 Q65 100 67 83 Q56 77 44 90 Q43 100 44 108Z" fill="#6a9a43"/>
+    {[0,72,144,216,288].map((a,i)=><ellipse key={i} cx={60+10*Math.cos(a*Math.PI/180)} cy={18+6*Math.sin(a*Math.PI/180)} rx="7.5" ry="4.5" fill="#e090d0" transform={`rotate(${a},${60+10*Math.cos(a*Math.PI/180)},${18+6*Math.sin(a*Math.PI/180)})`}/>)}
+    <circle cx="60" cy="18" r="4" fill="#f8d0f0"/><ellipse cx="60" cy="19" rx="2.5" ry="2" fill="#d060b8"/>
+    {[36,108,180,252,324].map((a,i)=><ellipse key={i} cx={56+9*Math.cos(a*Math.PI/180)} cy={46+5.5*Math.sin(a*Math.PI/180)} rx="6.5" ry="4" fill="#d878c8" transform={`rotate(${a},${56+9*Math.cos(a*Math.PI/180)},${46+5.5*Math.sin(a*Math.PI/180)})`}/>)}
+    <circle cx="56" cy="46" r="3.5" fill="#f0c8ec"/><ellipse cx="56" cy="47" rx="2" ry="1.8" fill="#c048a8"/>
+    {[18,90,162,234,306].map((a,i)=><ellipse key={i} cx={50+8*Math.cos(a*Math.PI/180)} cy={72+5*Math.sin(a*Math.PI/180)} rx="6" ry="3.8" fill="#e888d8" transform={`rotate(${a},${50+8*Math.cos(a*Math.PI/180)},${72+5*Math.sin(a*Math.PI/180)})`}/>)}
+    <circle cx="50" cy="72" r="3" fill="#fcd8f8"/><ellipse cx="50" cy="73" rx="2" ry="1.6" fill="#c850b0"/>
+  </svg>
+);
+const PlantLuckyBamboo=()=>(
+  <svg viewBox="0 0 100 110" width="80" height="88" style={{overflow:'visible'}}>
+    <rect x="36" y="88" width="28" height="22" rx="4" fill="rgba(180,220,240,.45)" stroke="rgba(180,220,240,.7)" strokeWidth="1"/>
+    <ellipse cx="50" cy="88" rx="14" ry="4" fill="rgba(200,235,255,.55)"/>
+    <rect x="38" y="95" width="24" height="3" fill="rgba(255,255,255,.18)" rx="1"/>
+    {[[42,109],[58,109]].map(([cx,by],si)=>{
+      const tops=[by,by-20,by-40,by-62];
+      return tops.slice(0,-1).map((y,i)=>(
+        <g key={`${si}-${i}`}>
+          <rect x={cx-4.5} y={y-19} width="9" height="21" rx="3.5" fill={si===0?'#68b040':'#78c048'}/>
+          <rect x={cx-4.5} y={y-3} width="9" height="4" rx="2" fill={si===0?'#508030':'#609838'}/>
+        </g>
+      ));
+    })}
+    {[[42,47],[58,47]].map(([cx,topY],si)=>(
+      <g key={si}>
+        <path d={`M${cx} ${topY} Q${cx-16} ${topY-8} ${cx-6} ${topY-22}`} stroke="#88d048" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+        <path d={`M${cx} ${topY} Q${cx+16} ${topY-6} ${cx+7} ${topY-21}`} stroke="#88d048" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+        <path d={`M${cx} ${topY} Q${cx+4} ${topY-15} ${cx} ${topY-26}`} stroke="#78c040" strokeWidth="2" fill="none" strokeLinecap="round"/>
+      </g>
+    ))}
+    <path d="M42 78 Q50 74 58 78" stroke="#e09050" strokeWidth="2.2" fill="none" strokeLinecap="round"/>
+  </svg>
+);
+const PlantGirasol=()=>(
+  <svg viewBox="0 0 100 110" width="80" height="88" style={{overflow:'visible'}}>
+    <path d="M50 108 Q48 86 52 58 Q54 34 50 13" stroke="#5a8a3a" strokeWidth="3.5" fill="none" strokeLinecap="round"/>
+    <path d="M51 82 Q73 76 79 60 Q66 52 52 66 Q50 74 51 82Z" fill="#6aaa4a"/>
+    <path d="M49 62 Q27 56 21 40 Q35 32 48 47 Q50 55 49 62Z" fill="#78ba52"/>
+    <path d="M79 60 Q66 62 51 82" stroke="rgba(255,255,255,.28)" strokeWidth="1.2" fill="none"/>
+    <path d="M21 40 Q35 46 49 62" stroke="rgba(255,255,255,.28)" strokeWidth="1.2" fill="none"/>
+    {[0,22.5,45,67.5,90,112.5,135,157.5,180,202.5,225,247.5,270,292.5,315,337.5].map((a,i)=><ellipse key={i} cx={50+15*Math.cos(a*Math.PI/180)} cy={14+9*Math.sin(a*Math.PI/180)} rx="8" ry="4" fill="#f4c820" transform={`rotate(${a},${50+15*Math.cos(a*Math.PI/180)},${14+9*Math.sin(a*Math.PI/180)})`} opacity=".92"/>)}
+    <circle cx="50" cy="14" r="10" fill="#3d1f0a"/><circle cx="50" cy="14" r="8" fill="#4a2a10"/>
+    {[0,45,90,135,180,225,270,315].map((a,i)=><circle key={i} cx={50+5*Math.cos(a*Math.PI/180)} cy={14+3*Math.sin(a*Math.PI/180)} r="1.5" fill="#6a3a18" opacity=".7"/>)}
+    <circle cx="50" cy="14" r="2" fill="#5a3015"/>
+  </svg>
+);
+const PlantEnredadera=()=>(
+  <svg viewBox="0 0 100 110" width="80" height="88" style={{overflow:'visible'}}>
+    <rect x="51" y="14" width="3" height="96" rx="1.5" fill="#c8a870" opacity=".75"/>
+    <path d="M50 108 Q34 95 52 82 Q69 69 52 54 Q35 41 53 27 Q66 17 52 9" stroke="#5a8040" strokeWidth="2" fill="none" strokeLinecap="round"/>
+    <path d="M52 108 Q68 95 50 82 Q33 69 50 54 Q67 41 49 27" stroke="#6a9048" strokeWidth="1.5" fill="none" strokeLinecap="round" opacity=".65"/>
+    {[[37,96],[65,78],[35,60],[66,42],[40,27]].map(([cx,cy],i)=>(
+      <g key={i}>
+        <path d={`M${cx} ${cy+5} Q${cx-9} ${cy-5} ${cx-4} ${cy-11} Q${cx} ${cy-13} ${cx} ${cy+5}Z`} fill={i%2===0?'#78c060':'#8ad070'}/>
+        <path d={`M${cx} ${cy+5} Q${cx+9} ${cy-5} ${cx+4} ${cy-11} Q${cx} ${cy-13} ${cx} ${cy+5}Z`} fill={i%2===0?'#78c060':'#8ad070'}/>
+        <path d={`M${cx} ${cy+5} Q${cx} ${cy-2} ${cx} ${cy-13}`} stroke="rgba(255,255,255,.35)" strokeWidth="1" fill="none"/>
+      </g>
+    ))}
+  </svg>
+);
+const PlantBonsai=()=>(
+  <svg viewBox="0 0 100 110" width="80" height="88" style={{overflow:'visible'}}>
+    <path d="M50 108 Q52 96 56 86 Q63 76 60 65 Q57 55 47 48 Q39 40 44 29" stroke="#7a5030" strokeWidth="11" fill="none" strokeLinecap="round"/>
+    <path d="M50 108 Q52 96 56 86 Q63 76 60 65 Q57 55 47 48 Q39 40 44 29" stroke="#9a6840" strokeWidth="6" fill="none" strokeLinecap="round" opacity=".45"/>
+    <path d="M58 76 Q73 72 79 61" stroke="#7a5030" strokeWidth="5.5" fill="none" strokeLinecap="round"/>
+    <path d="M50 58 Q35 55 27 44" stroke="#7a5030" strokeWidth="4.5" fill="none" strokeLinecap="round"/>
+    <path d="M44 29 Q50 20 55 13" stroke="#7a5030" strokeWidth="3.5" fill="none" strokeLinecap="round"/>
+    {[[44,21,24],[63,50,20],[26,42,17],[77,58,17],[50,29,13]].map(([cx,cy,r],i)=>(
+      <ellipse key={i} cx={cx} cy={cy} rx={r} ry={r*.68} fill={i%2===0?'#4a8838':'#5aa042'} opacity={.9+i*.01}/>
+    ))}
+    {[[41,19,11],[61,48,9],[74,56,8]].map(([cx,cy,r],i)=>(
+      <ellipse key={i} cx={cx} cy={cy} rx={r} ry={r*.65} fill="#70b852" opacity=".6"/>
+    ))}
+  </svg>
+);
+const PlantPino=()=>(
+  <svg viewBox="0 0 100 110" width="80" height="88" style={{overflow:'visible'}}>
+    <rect x="46" y="90" width="8" height="18" rx="3" fill="#7a5030"/>
+    <path d="M50 90 L14 90 L27 68 L50 68 L73 68 L86 90Z" fill="#3d7030"/>
+    <path d="M50 90 L16 90 L29 70" stroke="#4a8a38" strokeWidth="1.5" fill="none" opacity=".45"/>
+    <path d="M50 70 L21 70 L33 48 L50 48 L67 48 L79 70Z" fill="#4a8838"/>
+    <path d="M50 70 L23 70 L35 50" stroke="#5aa042" strokeWidth="1.5" fill="none" opacity=".45"/>
+    <path d="M50 50 L29 50 L39 28 L50 28 L61 28 L71 50Z" fill="#5aa042"/>
+    <path d="M50 30 L40 30 L50 10 L60 30Z" fill="#6abc50"/>
+    <path d="M26 68 Q50 61 74 68" stroke="rgba(255,255,255,.28)" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
+    <path d="M31 48 Q50 41 69 48" stroke="rgba(255,255,255,.22)" strokeWidth="2.2" strokeLinecap="round" fill="none"/>
+    <path d="M37 28 Q50 22 63 28" stroke="rgba(255,255,255,.18)" strokeWidth="2" strokeLinecap="round" fill="none"/>
+    <polygon points="50,6 51.5,11 56.5,11 52.5,14 54.2,19 50,16 45.8,19 47.5,14 43.5,11 48.5,11" fill="#ffd040" opacity=".9"/>
+  </svg>
+);
+const PlantCerezo=()=>(
+  <svg viewBox="0 0 100 110" width="80" height="88" style={{overflow:'visible'}}>
+    <path d="M50 108 Q50 90 48 75 Q45 58 38 40" stroke="#5a3520" strokeWidth="6" fill="none" strokeLinecap="round"/>
+    <path d="M50 108 Q50 90 48 75 Q45 58 38 40" stroke="#7a4a2c" strokeWidth="3" fill="none" strokeLinecap="round" opacity=".45"/>
+    <path d="M48 72 Q58 62 65 47" stroke="#5a3520" strokeWidth="4" fill="none" strokeLinecap="round"/>
+    <path d="M44 58 Q31 50 24 37" stroke="#5a3520" strokeWidth="3" fill="none" strokeLinecap="round"/>
+    <path d="M38 40 Q44 29 43 18" stroke="#5a3520" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+    {[[37,36],[65,43],[24,33],[43,14],[54,54]].map(([bx,by],bi)=>(
+      [[-7,-4],[2,-8],[9,-3],[6,5],[-5,4]].map(([dx,dy],fi)=>(
+        <g key={`${bi}-${fi}`}>
+          {[0,72,144,216,288].map((a,pi)=>(
+            <ellipse key={pi} cx={bx+dx+5.5*Math.cos(a*Math.PI/180)} cy={by+dy+3.5*Math.sin(a*Math.PI/180)} rx="3.8" ry="2.6" fill={bi%2===0?'#f0a0b8':'#f8c0d0'} transform={`rotate(${a},${bx+dx+5.5*Math.cos(a*Math.PI/180)},${by+dy+3.5*Math.sin(a*Math.PI/180)})`} opacity=".88"/>
+          ))}
+          <circle cx={bx+dx} cy={by+dy} r="2.5" fill="#fff0f5"/>
+          <circle cx={bx+dx} cy={by+dy} r="1.2" fill="#e080a0"/>
+        </g>
+      ))
+    ))}
+    {[[18,62],[76,72],[86,44],[10,50]].map(([px,py],i)=>(
+      <ellipse key={i} cx={px} cy={py} rx="3.5" ry="2" fill="#f8b8c8" opacity=".55" transform={`rotate(${i*28},${px},${py})`}/>
+    ))}
+  </svg>
+);
+
+// ── Mapa de plantas ───────────────────────────────────────
+const PLANT_COMPONENTS={
+  'cactus':PlantCactus,'suculenta':PlantSuculenta,'pothos':PlantPothos,
+  'lavanda':PlantLavanda,'monstera':PlantMonstera,'helecho':PlantHelecho,
+  'bambú':PlantBambu,'rosa':PlantRosa,'aloe':PlantAloe,'orquídea':PlantOrquidea,
+  'lucky bamboo':PlantLuckyBamboo,'girasol':PlantGirasol,'enredadera':PlantEnredadera,
+  'bonsái':PlantBonsai,'pino':PlantPino,'cerezo':PlantCerezo,
+};
+
+function selectPlant(dateStr,{total,postits,sketches,polaroids,authors}){
+  const seed=parseInt(dateStr.replace(/-/g,''),10)%2;
+  if(authors>=2&&sketches>0&&polaroids>0&&postits>0)return 'orquídea';
+  if(sketches>0&&polaroids>0&&postits>0)return 'monstera';
+  if(sketches>0&&polaroids>0)return 'cerezo';
+  if(sketches>0)return seed?'lavanda':'helecho';
+  if(polaroids>0)return seed?'rosa':'girasol';
+  if(postits>=5)return seed?'pothos':'enredadera';
+  if(postits>=3)return seed?'suculenta':'aloe';
+  if(postits>=1)return seed?'cactus':'lucky bamboo';
+  if(total===1)return seed?'bambú':'pino';
+  return 'cactus';
+}
+function calcGrowth(plantDate,today){
+  const days=Math.floor((new Date(today+'T12:00:00')-new Date(plantDate+'T12:00:00'))/86400000);
+  if(days<=0)return 0;
+  if(days>=5)return 1.0;
+  return 0.30+(days-1)*0.175;
+}
+
+// ═══════════════════════════════════════════════════════════
+// Garden component
+// ═══════════════════════════════════════════════════════════
+function Garden({session,dark}){
+  const [days,setDays]=useState(null);
+  const [loading,setLoading]=useState(true);
+  const [page,setPage]=useState(0);
+  const [tooltip,setTooltip]=useState(null);
+  const [fade,setFade]=useState(true);
+  const today=todayStr();
+  const ITEMS=9;
+
+  useEffect(()=>{
+    sb.from('murmur_notes')
+      .select('created_at,type,author_id,author_name')
+      .eq('room_id',session.roomId)
+      .then(({data})=>{
+        if(!data){setLoading(false);return;}
+        const groups={};
+        data.forEach(n=>{
+          const d=new Date(n.created_at).toLocaleDateString('sv-SE',{timeZone:'America/Santiago'});
+          if(!groups[d])groups[d]={date:d,postits:0,sketches:0,polaroids:0,authorSet:new Set(),authorCount:{}};
+          if(n.type==='postit')groups[d].postits++;
+          if(n.type==='sketch')groups[d].sketches++;
+          if(n.type==='polaroid')groups[d].polaroids++;
+          groups[d].authorSet.add(n.author_id);
+          groups[d].authorCount[n.author_name]=(groups[d].authorCount[n.author_name]||0)+1;
+        });
+        const todayRaw=groups[today]||{date:today,postits:0,sketches:0,polaroids:0,authorSet:new Set(),authorCount:{}};
+        const todayData={
+          ...todayRaw,
+          authors:todayRaw.authorSet.size,
+          total:todayRaw.postits+todayRaw.sketches+todayRaw.polaroids,
+          topAuthor:Object.entries(todayRaw.authorCount).sort((a,b)=>b[1]-a[1])[0]?.[0]||'',
+          isToday:true,
+        };
+        const past=Object.values(groups)
+          .filter(g=>g.date!==today)
+          .sort((a,b)=>b.date.localeCompare(a.date))
+          .map(g=>({
+            ...g,
+            authors:g.authorSet.size,
+            total:g.postits+g.sketches+g.polaroids,
+            topAuthor:Object.entries(g.authorCount).sort((a,b)=>b[1]-a[1])[0]?.[0]||'',
+          }));
+        setDays({past,todayData});
+        setLoading(false);
+      });
+  },[session.roomId]);
+
+  const fmtShort=d=>{
+    const dt=new Date(d+'T12:00:00');
+    return dt.toLocaleDateString('es',{day:'numeric',month:'short'});
+  };
+
+  const changePage=dir=>{
+    setFade(false);
+    setTimeout(()=>{setPage(p=>Math.max(0,Math.min(totalPages-1,p+dir)));setFade(true);},220);
+  };
+  const goPage=i=>{setFade(false);setTimeout(()=>{setPage(i);setFade(true);},220);};
+
+  const lightCls=dark?'':' light';
+  const tc=dark?'rgba(232,232,236,':'rgba(20,30,50,';
+
+  if(loading||!days){
+    return(
+      <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',color:dark?'rgba(232,232,236,.4)':'rgba(20,30,50,.4)',fontFamily:"'Cormorant Garamond',serif",fontStyle:'italic',fontSize:'1.1rem',letterSpacing:'.04em'}}>
+        cargando jardín...
+      </div>
+    );
+  }
+
+  const allSlots=[...days.past,days.todayData];
+  const totalPages=Math.max(1,Math.ceil(allSlots.length/ITEMS));
+  const pageSlots=allSlots.slice(page*ITEMS,(page+1)*ITEMS);
+
+  const todayLabel=days.todayData.total===0?'aún sin notas':days.todayData.total<=2?'falta poco...':'casi lista ·✦';
+
+  const btnStyle={
+    position:'absolute',top:'50%',transform:'translateY(-50%)',
+    width:38,height:38,borderRadius:11,border:'none',cursor:'pointer',
+    display:'flex',alignItems:'center',justifyContent:'center',
+    background:dark?'rgba(14,18,28,.65)':'rgba(255,255,255,.55)',
+    backdropFilter:'blur(12px)',color:dark?'rgba(232,232,236,.7)':'rgba(20,30,50,.6)',
+    boxShadow:'0 4px 12px rgba(0,0,0,.25)',transition:'all .2s',zIndex:10,
+  };
+
+  return(
+    <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:0,overflow:'hidden'}}>
+
+      {/* Arrows */}
+      {totalPages>1&&page>0&&(
+        <button style={{...btnStyle,left:12}} onClick={()=>changePage(-1)} onMouseEnter={e=>e.currentTarget.style.transform='translateY(-50%) translateX(-1px)'} onMouseLeave={e=>e.currentTarget.style.transform='translateY(-50%)'}>
+          <Icon.ChevronLeft className="icon"/>
+        </button>
+      )}
+      {totalPages>1&&page<totalPages-1&&(
+        <button style={{...btnStyle,right:12}} onClick={()=>changePage(1)} onMouseEnter={e=>e.currentTarget.style.transform='translateY(-50%) translateX(1px)'} onMouseLeave={e=>e.currentTarget.style.transform='translateY(-50%)'}>
+          <Icon.ChevronRight className="icon"/>
+        </button>
+      )}
+
+      {/* Grid */}
+      <div style={{opacity:fade?1:0,transition:'opacity .22s ease',display:'grid',gridTemplateColumns:'repeat(3,120px)',gap:'16px 28px',padding:'24px 48px 8px'}}>
+        {pageSlots.map((slot)=>{
+          const plantType=slot.isToday?null:selectPlant(slot.date,slot);
+          const growth=slot.isToday?0:calcGrowth(slot.date,today);
+          const PlantComp=plantType?PLANT_COMPONENTS[plantType]:null;
+          const isHovered=tooltip?.slot?.date===slot.date;
+          return(
+            <div key={slot.date}
+              style={{display:'flex',flexDirection:'column',alignItems:'center',gap:5,cursor:'pointer',position:'relative'}}
+              onMouseEnter={e=>{if(!slot.isToday)setTooltip({slot,rect:e.currentTarget.getBoundingClientRect()});}}
+              onMouseLeave={()=>setTooltip(null)}
+              onClick={e=>{if(!slot.isToday)setTooltip(t=>t?.slot?.date===slot.date?null:{slot,rect:e.currentTarget.getBoundingClientRect()});}}
+            >
+              {/* Plant + Pot container */}
+              <div style={{position:'relative',width:100,height:180}}>
+                {/* Plant */}
+                {PlantComp&&(
+                  <div style={{
+                    position:'absolute',bottom:58,left:'50%',
+                    transform:`translateX(-50%)`,
+                    width:80,height:88,
+                    transformOrigin:'bottom center',
+                    animation:'breathe 6s ease-in-out infinite',
+                    filter:isHovered?'brightness(1.06)':'none',
+                    transition:'filter .2s',
+                  }}>
+                    <div style={{transform:`scale(${growth})`,transformOrigin:'bottom center',width:'100%',height:'100%'}}>
+                      <PlantComp/>
+                    </div>
+                  </div>
+                )}
+                {/* Pot */}
+                <div style={{position:'absolute',bottom:0,left:'50%',transform:'translateX(-50%)'}}>
+                  <Pot empty={!!slot.isToday}/>
+                </div>
+              </div>
+              {/* Shelf plank shadow under pot */}
+              <div style={{width:110,height:6,borderRadius:'0 0 6px 6px',background:dark?'rgba(0,0,0,.18)':'rgba(0,0,0,.08)',marginTop:-4,marginBottom:2,filter:'blur(2px)'}}/>
+              {/* Date label */}
+              <div style={{fontFamily:"'DM Mono',monospace",fontSize:10,color:dark?'rgba(232,232,236,.5)':'rgba(20,30,50,.45)',letterSpacing:'.06em',textAlign:'center'}}>
+                {slot.isToday?'hoy':fmtShort(slot.date)}
+              </div>
+              {/* Plant name / status */}
+              <div style={{fontFamily:"'Cormorant Garamond',serif",fontStyle:'italic',fontSize:12.5,color:dark?'rgba(232,232,236,.7)':'rgba(20,30,50,.65)',textAlign:'center',maxWidth:110,lineHeight:1.3}}>
+                {slot.isToday?todayLabel:plantType}
+              </div>
+            </div>
+          );
+        })}
+        {/* Fill empty slots to keep grid shape */}
+        {Array.from({length:Math.max(0,ITEMS-pageSlots.length)}).map((_,i)=>(
+          <div key={'empty-'+i} style={{width:120,height:220}}/>
+        ))}
+      </div>
+
+      {/* Shelf plank */}
+      <div style={{
+        width:'min(480px,90vw)',height:14,
+        borderRadius:4,marginTop:-2,
+        background:dark?'linear-gradient(180deg,#a0784a,#7a5830)':'linear-gradient(180deg,#d4a870,#b8885c)',
+        boxShadow:dark?'0 6px 18px rgba(0,0,0,.4)':'0 6px 18px rgba(0,0,0,.18)',
+        position:'relative',
+      }}>
+        <div style={{position:'absolute',top:0,left:'5%',right:'5%',height:'40%',background:'rgba(255,255,255,.12)',borderRadius:'4px 4px 0 0'}}/>
+      </div>
+
+      {/* Page dots */}
+      {totalPages>1&&(
+        <div style={{display:'flex',gap:6,marginTop:20}}>
+          {Array.from({length:totalPages}).map((_,i)=>(
+            <div key={i} onClick={()=>goPage(i)} style={{
+              width:i===page?18:6,height:6,borderRadius:3,cursor:'pointer',
+              background:i===page?(dark?'rgba(232,232,236,.8)':'rgba(20,30,50,.7)'):(dark?'rgba(232,232,236,.2)':'rgba(20,30,50,.18)'),
+              transition:'all .3s ease',
+            }}/>
+          ))}
+        </div>
+      )}
+
+      {/* Tooltip */}
+      {tooltip&&(
+        <div style={{
+          position:'fixed',
+          left:Math.min(tooltip.rect.left+50,window.innerWidth-170),
+          top:Math.max(10,tooltip.rect.top-95),
+          zIndex:200,
+          background:dark?'rgba(14,18,28,.92)':'rgba(252,250,245,.92)',
+          backdropFilter:'blur(16px) saturate(180%)',
+          border:`1px solid ${dark?'rgba(255,255,255,.12)':'rgba(20,30,50,.1)'}`,
+          borderRadius:13,padding:'10px 14px',
+          fontSize:12,color:dark?'rgba(232,232,236,.85)':'rgba(20,30,50,.8)',
+          boxShadow:'0 8px 24px rgba(0,0,0,.28)',
+          pointerEvents:'none',
+          animation:'modalIn .2s var(--ease-out-expo)',
+          minWidth:148,
+        }}>
+          <div style={{position:'absolute',top:0,left:'15%',right:'15%',height:1,background:dark?'linear-gradient(90deg,transparent,rgba(255,255,255,.16) 50%,transparent)':'linear-gradient(90deg,transparent,rgba(255,255,255,.8) 50%,transparent)'}}/>
+          <div style={{fontFamily:"'DM Mono',monospace",fontSize:9.5,opacity:.55,marginBottom:5,letterSpacing:'.06em'}}>{fmtShort(tooltip.slot.date)}</div>
+          <div style={{fontFamily:"'Cormorant Garamond',serif",fontStyle:'italic',fontSize:14,marginBottom:3}}>
+            {tooltip.slot.total} nota{tooltip.slot.total!==1?'s':''}
+          </div>
+          {tooltip.slot.topAuthor&&(
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontStyle:'italic',fontSize:11.5,opacity:.65}}>más activ@: {tooltip.slot.topAuthor}</div>
+          )}
+          {(tooltip.slot.sketches>0||tooltip.slot.polaroids>0)&&(
+            <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,opacity:.45,marginTop:6,letterSpacing:'.04em'}}>
+              {[tooltip.slot.postits>0&&`${tooltip.slot.postits}✎`,tooltip.slot.sketches>0&&`${tooltip.slot.sketches}✏`,tooltip.slot.polaroids>0&&`${tooltip.slot.polaroids}⬜`].filter(Boolean).join('  ')}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════
 // App
 // ═══════════════════════════════════════════════════════════
 function App(){
@@ -1058,6 +1573,7 @@ function App(){
   const [inviteUrl,setInviteUrl]=useState('');
   const [isFullscreen,setIsFullscreen]=useState(false);
   const [isPanning,setIsPanning]=useState(false);
+  const [showGarden,setShowGarden]=useState(false);
   // zoomPct es solo para mostrar en UI — el motor gestiona el estado real
   const [zoomPct,setZoomPct]=useState(100);
 
@@ -1404,66 +1920,73 @@ function App(){
             <button className={`hbtn${manual==='day'?' active':''}${lightCls}`} onClick={()=>setManual(manual==='day'?null:'day')}><Icon.Sun/></button>
             <button className={`hbtn${manual==='night'?' active':''}${lightCls}`} onClick={()=>setManual(manual==='night'?null:'night')}><Icon.Moon/></button>
           </div>
+          <button className={`hbtn${showGarden?' active':''}${lightCls}`} onClick={()=>setShowGarden(g=>!g)} title="Jardín">
+            <Icon.Leaf/>
+          </button>
           <button className={`hbtn${lightCls}`} onClick={getInvite}><Icon.Plus className="icon-sm"/>invitar</button>
         </div>
       </div>
 
-      {/* Daynav */}
-      <div className={`daynav${lightCls}`}>
-        <button onClick={()=>changeDay(-1)}><Icon.ChevronLeft className="icon-sm"/></button>
-        <span className="day-label">{currentDay===todayStr()?'hoy':fmtDate(currentDay)}</span>
-        <button onClick={()=>changeDay(1)} disabled={isToday}><Icon.ChevronRight className="icon-sm"/></button>
-      </div>
-
-      {/* Canvas */}
-      <div
-        ref={viewportRef}
-        className={`canvas-viewport${isPanning?' panning':''}`}
-      >
-        <div ref={worldRef} className="canvas-world">
-          {elements.map(el=>(
-            <BoardEl key={el.id} el={el}
-              onMove={moveElement} onDelete={deleteElement}
-              onUpdateCaption={updateCaption} onPress={pressElement}
-              scale={G.current.scale}/>
-          ))}
+      {showGarden ? (
+        <Garden session={session} dark={dark}/>
+      ) : (<>
+        {/* Daynav */}
+        <div className={`daynav${lightCls}`}>
+          <button onClick={()=>changeDay(-1)}><Icon.ChevronLeft className="icon-sm"/></button>
+          <span className="day-label">{currentDay===todayStr()?'hoy':fmtDate(currentDay)}</span>
+          <button onClick={()=>changeDay(1)} disabled={isToday}><Icon.ChevronRight className="icon-sm"/></button>
         </div>
 
-        {elements.length===0&&ready&&(
-          <div className="empty-state">
-            <div className="empty-mark">
-              <Icon.Logo className="empty-glyph" style={{color:dark?'#e8e4f0':'#1a2840'}}/>
-              <p className={`empty-text${lightCls}`}>
-                {isToday?'el tablón te espera...':'sin recuerdos este día'}
-              </p>
-            </div>
+        {/* Canvas */}
+        <div
+          ref={viewportRef}
+          className={`canvas-viewport${isPanning?' panning':''}`}
+        >
+          <div ref={worldRef} className="canvas-world">
+            {elements.map(el=>(
+              <BoardEl key={el.id} el={el}
+                onMove={moveElement} onDelete={deleteElement}
+                onUpdateCaption={updateCaption} onPress={pressElement}
+                scale={G.current.scale}/>
+            ))}
           </div>
-        )}
-      </div>
 
-      {/* Center button */}
-      <button className={`center-btn${lightCls}`} onClick={centerView} title="Centrar">
-        <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-          <circle cx="12" cy="12" r="3"/>
-          <path d="M12 2v4M12 18v4M2 12h4M18 12h4" strokeLinecap="round"/>
-        </svg>
-      </button>
+          {elements.length===0&&ready&&(
+            <div className="empty-state">
+              <div className="empty-mark">
+                <Icon.Logo className="empty-glyph" style={{color:dark?'#e8e4f0':'#1a2840'}}/>
+                <p className={`empty-text${lightCls}`}>
+                  {isToday?'el tablón te espera...':'sin recuerdos este día'}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
 
-      {/* Zoom */}
-      <div className={`zoom-indicator${lightCls}`}>
-        <button onClick={zoomOut}><Icon.X className="icon-sm" style={{transform:'rotate(45deg)'}}/></button>
-        <span className="zoom-value">{zoomPct}%</span>
-        <button onClick={zoomIn}><Icon.Plus className="icon-sm"/></button>
-      </div>
+        {/* Center button */}
+        <button className={`center-btn${lightCls}`} onClick={centerView} title="Centrar">
+          <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M12 2v4M12 18v4M2 12h4M18 12h4" strokeLinecap="round"/>
+          </svg>
+        </button>
 
-      {/* Toolbar */}
-      <div className={`toolbar${lightCls}`}>
-        <span className="tbtn-label">añadir</span>
-        <button className="tbtn" onClick={()=>setShowPostit(true)}><Icon.Note/></button>
-        <button className="tbtn" onClick={()=>setShowDraw(true)}><Icon.Pencil/></button>
-        <button className="tbtn" onClick={()=>fileRef.current?.click()}><Icon.Camera/></button>
-        <input ref={fileRef} type="file" accept="image/*" style={{display:'none'}} onChange={handlePhoto}/>
-      </div>
+        {/* Zoom */}
+        <div className={`zoom-indicator${lightCls}`}>
+          <button onClick={zoomOut}><Icon.X className="icon-sm" style={{transform:'rotate(45deg)'}}/></button>
+          <span className="zoom-value">{zoomPct}%</span>
+          <button onClick={zoomIn}><Icon.Plus className="icon-sm"/></button>
+        </div>
+
+        {/* Toolbar */}
+        <div className={`toolbar${lightCls}`}>
+          <span className="tbtn-label">añadir</span>
+          <button className="tbtn" onClick={()=>setShowPostit(true)}><Icon.Note/></button>
+          <button className="tbtn" onClick={()=>setShowDraw(true)}><Icon.Pencil/></button>
+          <button className="tbtn" onClick={()=>fileRef.current?.click()}><Icon.Camera/></button>
+          <input ref={fileRef} type="file" accept="image/*" style={{display:'none'}} onChange={handlePhoto}/>
+        </div>
+      </>)}
     </div>
   );
 }
