@@ -1530,13 +1530,17 @@ function Garden({session,dark}){
               <div style={{position:'relative',width:100,height:180}}>
                 {PlantComp&&(
                   <div style={{
-                    position:'absolute',bottom:58,left:'50%',transform:'translateX(-50%)',
-                    width:80,height:88,transformOrigin:'bottom center',
-                    animation:'breathe 6s ease-in-out infinite',
+                    position:'absolute',bottom:58,left:'50%',
+                    width:80,height:88,
+                    transform:'translateX(-50%)',
                     filter:isHovered?'brightness(1.08)':'none',transition:'filter .2s',
                   }}>
-                    <div style={{transform:`scale(${growth})`,transformOrigin:'bottom center',width:'100%',height:'100%',transition:'transform 1.2s var(--ease-out-expo)'}}>
-                      <PlantComp/>
+                    {/* capa breathe — separada para no pisar el translateX */}
+                    <div style={{width:'100%',height:'100%',animation:'breathe 6s ease-in-out infinite',transformOrigin:'bottom center'}}>
+                      {/* capa crecimiento */}
+                      <div style={{transform:`scale(${growth})`,transformOrigin:'bottom center',width:'100%',height:'100%',transition:'transform 1.2s var(--ease-out-expo)'}}>
+                        <PlantComp/>
+                      </div>
                     </div>
                   </div>
                 )}
