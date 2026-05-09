@@ -1410,7 +1410,7 @@ function Garden({session,dark}){
       el.removeEventListener('touchmove',onTouchMove);
       el.removeEventListener('touchend',onTouchEnd);
     };
-  },[]);
+  },[loading]);
 
   // Cargar notas agrupadas por día
   useEffect(()=>{
