@@ -1639,9 +1639,9 @@ function Garden({session,dark}){
                     filter:isHovered?'brightness(1.08)':'none',transition:'filter .2s',
                   }}>
                     {/* capa breathe — separada para no pisar el translateX */}
-                    <div style={{width:'100%',height:'100%',animation:'breathe 6s ease-in-out infinite',transformOrigin:'bottom center'}}>
+                    <div style={{width:'100%',height:'100%',animation:'breathe 6s ease-in-out infinite',transformOrigin:'bottom center',display:'flex',alignItems:'flex-end',justifyContent:'center'}}>
                       {/* capa crecimiento */}
-                      <div style={{transform:`scale(${growth})`,transformOrigin:'bottom center',width:'100%',height:'100%',transition:'transform 1.2s var(--ease-out-expo)'}}>
+                      <div style={{transform:`scale(${growth})`,transformOrigin:'bottom center',display:'flex',alignItems:'flex-end',justifyContent:'center',transition:'transform 1.2s var(--ease-out-expo)'}}>
                         <PlantComp/>
                       </div>
                     </div>
