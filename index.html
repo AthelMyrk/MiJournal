@@ -172,6 +172,61 @@ input[type=color]::-webkit-color-swatch{border-top:1px solid #808080;border-left
   border-top:1px solid #4aaa28;
   display:flex;align-items:center;padding:0;gap:0;
   box-shadow:0 1px 0 rgba(255,255,255,.2) inset;
+  position:relative;
+}
+
+/* ── Menú Inicio XP ── */
+@keyframes xpStartIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+.xp-start-menu{
+  position:absolute;bottom:30px;left:0;
+  width:320px;
+  background:#ece9d8;
+  outline:1px solid #0a0a0a;
+  display:flex;flex-direction:column;
+  z-index:200;
+  box-shadow:4px 4px 14px rgba(0,0,0,.45);
+  font-family:'Tahoma',sans-serif;font-size:11px;
+  animation:xpStartIn .16s var(--ease-out-expo);
+}
+.xp-start-menu-header{
+  background:linear-gradient(180deg,#2a78c8 0%,#1a5bc8 50%,#0a3a98 100%);
+  padding:10px 14px;
+  display:flex;align-items:center;gap:10px;
+  color:#fff;font-weight:bold;font-size:13px;
+  text-shadow:1px 1px 2px rgba(0,0,0,.5);
+  border-bottom:2px solid #ffa01a;
+}
+.xp-start-menu-header .xp-start-orb{width:24px;height:24px;}
+.xp-start-menu-body{display:flex;}
+.xp-start-menu-col-left{
+  flex:1;background:#0a3a98;
+  padding:8px 0;
+}
+.xp-start-menu-col-right{
+  flex:1;background:#d4dfee;
+  padding:8px 0;
+  border-left:1px solid #fff;
+}
+.xp-start-item{
+  display:flex;align-items:center;gap:8px;
+  padding:6px 12px;width:100%;
+  background:transparent;border:none;
+  font-family:inherit;font-size:11px;
+  cursor:pointer;text-align:left;
+}
+.xp-start-menu-col-left .xp-start-item{color:#fff;}
+.xp-start-menu-col-right .xp-start-item{color:#000;}
+.xp-start-item:hover{background:#316ac5;color:#fff !important;}
+.xp-start-item .emoji{font-size:16px;line-height:1;width:18px;text-align:center;}
+.xp-start-menu-footer{
+  background:#ece9d8;
+  border-top:2px solid #0a3a98;
+  padding:4px 6px;
+  display:flex;justify-content:flex-end;
+}
+.xp-start-menu-footer .xp-start-item{
+  width:auto;color:#000;
+  padding:6px 14px;
 }
 .xp-start-btn{
   height:30px;padding:0 18px 0 6px;
@@ -878,12 +933,21 @@ function DrawModal({onSave,onCancel,isDark}){
 // ═══════════════════════════════════════════════════════════
 // Postit Modal
 // ═══════════════════════════════════════════════════════════
+const KAOMOJI=[
+  '(｡◕‿◕｡)','(♡°▽°♡)','(ɔ◔‿◔)ɔ♥','(づ￣³￣)づ','(˘³˘)♥',
+  '(T_T)','(｡•́︿•̀｡)','(╥_╥)','(╯°□°）╯','(ง•̀_•́)ง',
+  '(＃｀Д´)','¯\\_(ツ)_/¯','(￣▽￣)ノ','UwU','OwO',
+  '(ﾉ◕ヮ◕)ﾉ*:･ﾟ✧','(*^‿^*)','(≧◡≦)','｡ﾟ(ﾟ´Д｀ﾟ)ﾟ｡','(っ˘ω˘ς)',
+];
+const KAOMOJI_FONT="'Segoe UI Emoji','Meiryo','MS PGothic',sans-serif";
+
 function PostitModal({onSave,onCancel,isDark}){
   const [text,setText]=useState('');
   const [font,setFont]=useState('caveat');
   const [group,setGroup]=useState('pastel');       // 'pastel' | 'vivos' | 'custom'
   const [color,setColor]=useState('#fefcf0');       // siempre hex
   const [customColor,setCustomColor]=useState('#ffd6e0');
+  const [kaomoji,setKaomoji]=useState(null);
   const light=!isDark;
 
   const pickGroup=(g)=>{
@@ -977,9 +1041,33 @@ function PostitModal({onSave,onCancel,isDark}){
             </div>
           )}
         </div>
+        <div>
+          <div className="mlabel" style={{color:'#666',fontSize:10}}>estado</div>
+          <div style={{display:'flex',gap:4,overflowX:'auto',padding:'4px 2px',WebkitOverflowScrolling:'touch'}}>
+            {KAOMOJI.map(k=>(
+              <button key={k} type="button"
+                onClick={()=>setKaomoji(kaomoji===k?null:k)}
+                style={{
+                  flexShrink:0,padding:'5px 9px',
+                  background:kaomoji===k?'#fff':'linear-gradient(180deg,#fafaf2,#dcd8c0)',
+                  border:'1px solid',
+                  borderTopColor:kaomoji===k?'#0a5bc4':'#fff',
+                  borderLeftColor:kaomoji===k?'#0a5bc4':'#fff',
+                  borderRightColor:kaomoji===k?'#0a5bc4':'#808080',
+                  borderBottomColor:kaomoji===k?'#0a5bc4':'#808080',
+                  outline:kaomoji===k?'1px solid #0a5bc4':'none',
+                  outlineOffset:0,
+                  fontFamily:KAOMOJI_FONT,fontSize:13,color:'#000',
+                  cursor:'pointer',whiteSpace:'nowrap',
+                }}>
+                {k}
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="mrow">
           <button className="mbtn" onClick={onCancel}>Cancelar</button>
-          <button className="mbtn primary" disabled={!text.trim()} onClick={()=>text.trim()&&onSave({text,font,color})}>Poner en tablón</button>
+          <button className="mbtn primary" disabled={!text.trim()} onClick={()=>text.trim()&&onSave({text,font,color,kaomoji})}>Poner en tablón</button>
         </div>
         </div>
       </div>
@@ -1064,7 +1152,9 @@ function BoardEl({el,onMove,onDelete,onUpdateCaption,onPress,scale}){
         onMouseDown={startDrag} onTouchStart={startDrag}>
         <button className="del-btn" onClick={()=>onDelete(el.id)}><Icon.X className="icon-sm"/></button>
         <div className="postit" style={{background:bgColor,fontFamily:font.css,width:w,height:el.h||'auto',overflow:'hidden',color:tc}}>
-          <div className="postit-author" style={{color:dark?'rgba(255,255,255,.85)':'rgba(0,0,0,.78)',background:dark?'rgba(0,0,0,.18)':'rgba(255,255,255,.35)'}}>{el.author_name||'anónimo'}</div>
+          <div className="postit-author" style={{color:dark?'rgba(255,255,255,.85)':'rgba(0,0,0,.78)',background:dark?'rgba(0,0,0,.18)':'rgba(255,255,255,.35)'}}>
+            {el.author_name||'anónimo'}{el.kaomoji&&<span style={{fontFamily:KAOMOJI_FONT,marginLeft:'.4em'}}>{el.kaomoji}</span>}
+          </div>
           <div className="postit-body">
             <div className="postit-text" style={{fontSize:el.font==='caveat'?'1.15rem':'13.5px',fontStyle:['cormorant','lora'].includes(el.font)?'italic':'normal'}}>{el.content}</div>
             <div className="postit-time">{new Date(el.created_at).toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'})}</div>
@@ -2025,7 +2115,20 @@ function App(){
   const [showGarden,setShowGarden]=useState(false);
   const [time,setTime]=useState(new Date());
   const [wallpaper,setWallpaper]=useState(null);
+  const [showStartMenu,setShowStartMenu]=useState(false);
   useEffect(()=>{const t=setInterval(()=>setTime(new Date()),30000);return()=>clearInterval(t);},[]);
+
+  // Cerrar Start Menu al click afuera
+  useEffect(()=>{
+    if(!showStartMenu)return;
+    const handler=e=>{
+      if(!e.target.closest('.xp-start-menu')&&!e.target.closest('.xp-start-btn')){
+        setShowStartMenu(false);
+      }
+    };
+    document.addEventListener('mousedown',handler);
+    return()=>document.removeEventListener('mousedown',handler);
+  },[showStartMenu]);
 
   // FONDOS POR DÍA — cómo actualizar:
   // 1. Ir a supabase.com → proyecto → Table Editor → murmur_wallpapers
@@ -2242,9 +2345,19 @@ function App(){
   const centerView=()=>applyAndCommit(0,0,1);
 
   // Cargar elementos del día
-  // mergeFromServer: combina fila del server con la local, preservando w/h locales si el server no las tiene
-  // (workaround para si las columnas w/h no existen en murmur_notes)
+  // pendingUpdates: ref que marca elementos recién editados localmente
+  // — durante PENDING_MS desde la edición local, ignoramos lo que diga el server para w/h/x/y
+  // — esto sobrevive a updates fallidos (RLS, columnas, etc.) y races con el polling
+  const pendingUpdates=useRef({});
+  const PENDING_MS=8000;
   const mergeFromServer=(serverEl,localEl)=>{
+    const pending=pendingUpdates.current[serverEl.id];
+    if(pending&&localEl&&(Date.now()-pending)<PENDING_MS){
+      // Edición local reciente — preservar x/y/w/h locales, pero aceptar el resto del server
+      return{...serverEl,x:localEl.x,y:localEl.y,
+        w:localEl.w!==undefined?localEl.w:serverEl.w,
+        h:localEl.h!==undefined?localEl.h:serverEl.h};
+    }
     const merged={...localEl,...serverEl};
     if(localEl){
       if(serverEl.w===undefined||serverEl.w===null) merged.w=localEl.w;
@@ -2304,6 +2417,7 @@ function App(){
 
   const moveElement=useCallback(async(id,x,y,w,h)=>{
     const upd={x,y};if(w!==undefined)upd.w=w;if(h!==undefined)upd.h=h;
+    pendingUpdates.current[id]=Date.now();
     setElements(prev=>prev.map(e=>e.id===id?{...e,...upd}:e));
     await sb.from('murmur_notes').update(upd).eq('id',id);
   },[]);
@@ -2391,7 +2505,7 @@ function App(){
         </div>
       )}
       {showPostit&&<PostitModal isDark={dark} onCancel={()=>setShowPostit(false)}
-        onSave={async d=>{await addElement({type:'postit',content:d.text,font:d.font,color:d.color});setShowPostit(false);}}/>}
+        onSave={async d=>{await addElement({type:'postit',content:d.text,font:d.font,color:d.color,kaomoji:d.kaomoji||null});setShowPostit(false);}}/>}
       {showDraw&&<DrawModal isDark={dark} onCancel={()=>setShowDraw(false)}
         onSave={async dataUrl=>{await addElement({type:'sketch',content:dataUrl,w:240,h:180});setShowDraw(false);}}/>}
 
@@ -2484,7 +2598,39 @@ function App(){
 
       {/* Taskbar */}
       <div className="xp-taskbar">
-        <button className="xp-start-btn">
+        {showStartMenu&&(
+          <div className="xp-start-menu" onClick={e=>e.stopPropagation()}>
+            <div className="xp-start-menu-header">
+              <span className="xp-start-orb"/>
+              <span>MurmurTether</span>
+            </div>
+            <div className="xp-start-menu-body">
+              <div className="xp-start-menu-col-left">
+                <button className="xp-start-item" onClick={()=>{setShowGarden(true);setShowStartMenu(false);}}>
+                  <span className="emoji">🌱</span>Jardín
+                </button>
+                <button className="xp-start-item" onClick={()=>{setShowGarden(false);setShowStartMenu(false);}}>
+                  <span className="emoji">📋</span>Mis notas
+                </button>
+              </div>
+              <div className="xp-start-menu-col-right">
+                <button className="xp-start-item" onClick={()=>{setManual(dark?'day':'night');setShowStartMenu(false);}}>
+                  <span className="emoji">{dark?'☀️':'🌙'}</span>{dark?'Modo día':'Modo noche'}
+                </button>
+              </div>
+            </div>
+            <div className="xp-start-menu-footer">
+              <button className="xp-start-item" onClick={()=>{
+                if(confirm('¿Cerrar sesión?')){
+                  ls.set('userId',null);ls.set('roomId',null);location.reload();
+                }
+              }}>
+                <span className="emoji">🔴</span>Cerrar sesión
+              </button>
+            </div>
+          </div>
+        )}
+        <button className="xp-start-btn" onClick={()=>setShowStartMenu(v=>!v)}>
           <span className="xp-start-orb"/>inicio
         </button>
         <div className="xp-task-spacer">
