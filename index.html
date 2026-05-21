@@ -1842,7 +1842,7 @@ function Garden({session,dark}){
   };
 
   return(
-    <div ref={gardenContainerRef} style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',overflow:'hidden'}} onClick={()=>setActivePicker(null)}>
+    <div ref={gardenContainerRef} style={{position:'absolute',inset:0,zIndex:10,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',overflow:'hidden'}} onClick={()=>setActivePicker(null)}>
 
       {/* Flechas de navegación */}
       {totalPages>1&&page>0&&(
