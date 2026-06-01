@@ -2372,17 +2372,20 @@ function App(){
       sb.from('murmur_notes')
         .select('*').eq('room_id',session.roomId)
         .gte('created_at',currentDay+'T00:00:00').lte('created_at',currentDay+'T23:59:59')
-        .then(({data})=>{
-          if(data){
-            setElements(prev=>data.map(srv=>{
-              const local=prev.find(e=>e.id===srv.id);
-              let m=mergeFromServer(srv,local);
-              if(m.x>=0&&m.x<=1000&&m.y>=0&&m.y<=1000){
-                m={...m,x:Math.round((m.x-500)*1.6),y:Math.round((m.y-400)*1.6)};
-              }
-              return m;
-            }));
-          }
+        .then(({data,error})=>{
+          if(error) console.error('Error cargando notas:',error);
+          setElements(prev=>(data||[]).map(srv=>{
+            const local=prev.find(e=>e.id===srv.id);
+            let m=mergeFromServer(srv,local);
+            if(m.x>=0&&m.x<=1000&&m.y>=0&&m.y<=1000){
+              m={...m,x:Math.round((m.x-500)*1.6),y:Math.round((m.y-400)*1.6)};
+            }
+            return m;
+          }));
+          setReady(true);
+        })
+        .catch(err=>{
+          console.error('Error en load:',err);
           setReady(true);
         });
     };
